@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    :root { 
+        --bg: #1a1a1a; --card-bg: #2d2d2d; --base-c: #ff3e3e; --jungle-c: #2ecc71; --fossil-c: #e67e22; --rocket-c: #c0392b;
+        --card-scale: 1.2; 
+    }
+    body { font-family: sans-serif; background-color: var(--bg); color: #fff; padding: 20px; }
+    
+    .controls { background: #222; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+    .actions-center { text-align: center; margin-bottom: 20px; }
+    .header-container { display: flex; gap: 40px; justify-content: center; }
+    .header-col { flex: 1; max-width: 400px; }
+    
+    .set-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+    .progress-bg { flex-grow: 1; height: 10px; background: #444; border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #2ecc71; transition: width 0.3s; }
+    
+    #binderTable { width: 100%; border-collapse: collapse; background: #222; margin-top: 20px; font-size: 0.9rem; }
+    #binderTable th, #binderTable td { padding: 8px; border: 1px solid #444; text-align: center; }
+    #binderTable .thumb { width: calc(60px * var(--card-scale)); }
+
+    #app { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+    .page-wrapper { width: calc(650px * var(--card-scale)); background: #111; padding: 15px; border-radius: 15px; }
+    .page-header { font-size: 1.5rem; font-weight: bold; border-bottom: 3px solid; padding-bottom: 5px; display: inline-block; margin-bottom: 15px; }
+    .binder-page { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    
+    .card-slot { background: var(--card-bg); padding: 10px; border-radius: 8px; border: 2px solid #444; text-align: center; display: flex; flex-direction: column; }
+    .thumb { width: 100%; height: auto; display: block; margin: 0 auto; }
+    .card-slot.owned { border-color: #2ecc71; background: #1a2d1a; }
+    .card-slot.pending { border-color: #f1c40f; background: #2d261a; }
+    
+    .price-input { width: 40px; background: #444; color: #f1c40f; border: 1px solid #666; text-align: center; }
+    table { width: 100%; font-size: 0.75rem; border-collapse: collapse; margin-top: 5px; }
+    body.hide-values .price-input, body.hide-values .price-col { display: none; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+    .modal-content { background: #222; padding: 30px; border-radius: 12px; width: 800px; display: flex; gap: 30px; border: 1px solid #444; }
+    .modal-left { flex: 1; text-align: center; }
+    .modal-right { flex: 2; }
+    .val-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+    <div class="actions-center">
+        <h2>MASTER BINDER CONTROLS</h2>
+        <button onclick="exportData()">Export JSON</button>
+        <button onclick="document.getElementById('importFile').click()">Import JSON</button>
+        <input type="file" id="importFile" onchange="importData(this)" style="display:none">
+        <div style="margin-top:15px;">
+            <button onclick="toggleView('grid')">Binder View</button>
+            <button onclick="toggleView('table')">Table View</button>
+        </div>
+    </div>
+    <div class="header-container">
+        <div class="header-col">
+            <h3>Card Sets</h3>
+            <div id="setTrackers"></div>
+        </div>
+        <div class="header-col">
+            <h3>Card Type</h3>
+            <label><input type="checkbox" id="hideOwned" onchange="render()"> Hide Owned</label>
+            <label><input type="checkbox" id="hidePending" onchange="render()"> Hide Pending</label>
+            <label><input type="checkbox" id="hideUnl" onchange="render()"> Hide Unl</label>
+            <label><input type="checkbox" id="hide1st" onchange="render()"> Hide 1st</label>
+            <label><input type="checkbox" id="hideSdls" onchange="render()"> Hide SDLS</label>
+            <label style="display:block; margin-top:10px; color:#f1c40f;"><input type="checkbox" id="hideValues" onchange="toggleValues(this.checked)"> Hide Values</label>
+            <div style="margin-top:15px;">
+                <label>Thumbnail/Card Scale</label><br>
+                <input type="range" id="sizeSlider" min="0.4" max="2.0" step="0.05" value="1.2" oninput="updateScale(this.value)">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="app"></div>
+
+<div id="valueModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-left" id="modalLeft"></div>
+        <div class="modal-right">
+            <h3>Market & Grading Values</h3>
+            <div id="priceData" class="val-grid"></div>
+            <div style="margin-top:20px;">
+                <button onclick="refreshCardPrices()">Refresh API Prices</button>
+                <button onclick="document.getElementById('valueModal').style.display='none'">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // PASTE YOUR ARRAYS HERE
+    const baseCards = [{num:1,name:"Alakazam"},{num:2,name:"Blastoise",hasError:true},{num:3,name:"Chansey"},{num:4,name:"Charizard"},{num:5,name:"Clefairy"},{num:6,name:"Gyarados"},{num:7,name:"Hitmonchan"},{num:8,name:"Machamp",hasError:true},{num:9,name:"Magneton"},{num:10,name:"Mewtwo"},{num:11,name:"Nidoking"},{num:12,name:"Ninetales",hasError:true},{num:13,name:"Poliwrath"},{num:14,name:"Raichu"},{num:15,name:"Venusaur"},{num:16,name:"Zapdos"},{num:17,name:"Beedrill"},{num:18,name:"Dragonair"},{num:19,name:"Dugtrio"},{num:20,name:"Electabuzz"},{num:21,name:"Electrode"},{num:22,name:"Pidgeotto"},{num:23,name:"Arcanine"},{num:24,name:"Charmeleon"},{num:25,name:"Dewgong"},{num:26,name:"Dratini"},{num:27,name:"Farfetch'd"},{num:28,name:"Growlithe"},{num:29,name:"Haunter"},{num:30,name:"Ivysaur"},{num:31,name:"Jynx"},{num:32,name:"Kadabra"},{num:33,name:"Kakuna"},{num:34,name:"Machoke"},{num:35,name:"Magikarp"},{num:36,name:"Magmar"},{num:37,name:"Nidorino"},{num:38,name:"Poliwhirl"},{num:39,name:"Porygon"},{num:40,name:"Raticate"},{num:41,name:"Seel"},{num:42,name:"Wartortle"},{num:43,name:"Abra"},{num:44,name:"Bulbasaur"},{num:45,name:"Caterpie"},{num:46,name:"Charmander"},{num:47,name:"Diglett"},{num:48,name:"Doduo"},{num:49,name:"Drowzee"},{num:50,name:"Gastly"},{num:51,name:"Koffing"},{num:52,name:"Machop"},{num:53,name:"Magnemite"},{num:54,name:"Metapod"},{num:55,name:"Nidoran ♂"},{num:56,name:"Onix"},{num:57,name:"Pidgey"},{num:58,name:"Pikachu",hasError:true},{num:59,name:"Poliwag"},{num:60,name:"Ponyta"},{num:61,name:"Rattata"},{num:62,name:"Sandshrew"},{num:63,name:"Squirtle"},{num:64,name:"Starmie"},{num:65,name:"Staryu"},{num:66,name:"Tangela"},{num:67,name:"Voltorb"},{num:68,name:"Vulpix"},{num:69,name:"Weedle"},{num:70,name:"Clefairy Doll"},{num:71,name:"Computer Search"},{num:72,name:"Devolution Spray"},{num:73,name:"Full Heal"},{num:74,name:"Item Finder"},{num:75,name:"Lass"},{num:76,name:"Pokémon Breeder"},{num:77,name:"Pokémon Trader"},{num:78,name:"Scoop Up"},{num:79,name:"Super Energy Removal"},{num:80,name:"Defender"},{num:81,name:"Energy Retrieval"},{num:82,name:"Grass Energy"},{num:83,name:"Healing Field"},{num:84,name:"Maintenance"},{num:85,name:"PlusPower"},{num:86,name:"Pokémon Center"},{num:87,name:"Pokémon Flute"},{num:88,name:"Pokedex"},{num:89,name:"Professor Oak"},{num:90,name:"Revive"},{num:91,name:"Super Potion"},{num:92,name:"Bill"},{num:93,name:"Energy Removal"},{num:94,name:"Gust of Wind"},{num:95,name:"Potion"},{num:96,name:"Switch"},{num:97,name:"Double Colorless Energy"},{num:98,name:"Fighting Energy"},{num:99,name:"Fire Energy"},{num:100,name:"Grass Energy"},{num:101,name:"Lightning Energy"},{num:102,name:"Psychic Energy"}]; 
+    const jungleCards = [{num:1,name:"Clefable"},{num:2,name:"Electrode"},{num:3,name:"Flareon"},{num:4,name:"Jolteon"},{num:5,name:"Kangaskhan"},{num:6,name:"Mr. Mime"},{num:7,name:"Nidoqueen"},{num:8,name:"Pidgeot"},{num:9,name:"Pinsir"},{num:10,name:"Scyther"},{num:11,name:"Snorlax"},{num:12,name:"Vaporeon"},{num:13,name:"Venomoth"},{num:14,name:"Victreebel"},{num:15,name:"Vileplume"},{num:16,name:"Wigglytuff"},{num:17,name:"Butterfree"},{num:18,name:"Dodrio"},{num:19,name:"Exeggutor"},{num:20,name:"Fearow"},{num:21,name:"Gloom"},{num:22,name:"Lickitung"},{num:23,name:"Marowak"},{num:24,name:"Nidorina"},{num:25,name:"Parasect"},{num:26,name:"Persian"},{num:27,name:"Primeape"},{num:28,name:"Rapidash"},{num:29,name:"Rhydon"},{num:30,name:"Seaking"},{num:31,name:"Tauros"},{num:32,name:"Weepinbell"},{num:33,name:"Bellsprout"},{num:34,name:"Cubone"},{num:35,name:"Eevee"},{num:36,name:"Exeggcute"},{num:37,name:"Goldeen"},{num:38,name:"Jigglypuff"},{num:39,name:"Mankey"},{num:40,name:"Meowth"},{num:41,name:"Nidoran ♀"},{num:42,name:"Oddish"},{num:43,name:"Paras"},{num:44,name:"Pikachu"},{num:45,name:"Rhyhorn"},{num:46,name:"Spearow"},{num:47,name:"Venonat"},{num:48,name:"Poke Ball"},{num:49,name:"Butterfree"},{num:50,name:"Dodrio"},{num:51,name:"Exeggutor"},{num:52,name:"Fearow"},{num:53,name:"Gloom"},{num:54,name:"Lickitung"},{num:55,name:"Marowak"},{num:56,name:"Nidorina"},{num:57,name:"Parasect"},{num:58,name:"Persian"},{num:59,name:"Primeape"},{num:60,name:"Rapidash"},{num:61,name:"Rhydon"},{num:62,name:"Seaking"},{num:63,name:"Tauros"},{num:64,name:"Weepinbell"}];
+    const fossilCards = [{num:1,name:"Aerodactyl"},{num:2,name:"Articuno"},{num:3,name:"Ditto"},{num:4,name:"Dragonite"},{num:5,name:"Gengar"},{num:6,name:"Haunter"},{num:7,name:"Hitmonlee"},{num:8,name:"Hypno"},{num:9,name:"Kabutops"},{num:10,name:"Lapras"},{num:11,name:"Magneton"},{num:12,name:"Moltres"},{num:13,name:"Muk"},{num:14,name:"Raichu"},{num:15,name:"Zapdos"},{num:16,name:"Aerodactyl"},{num:17,name:"Articuno"},{num:18,name:"Ditto"},{num:19,name:"Dragonite"},{num:20,name:"Gengar"},{num:21,name:"Haunter"},{num:22,name:"Hitmonlee"},{num:23,name:"Hypno"},{num:24,name:"Kabutops"},{num:25,name:"Lapras"},{num:26,name:"Magneton"},{num:27,name:"Moltres"},{num:28,name:"Muk"},{num:29,name:"Raichu"},{num:30,name:"Zapdos"},{num:31,name:"Arbok"},{num:32,name:"Cloyster"},{num:33,name:"Gastly"},{num:34,name:"Golbat"},{num:35,name:"Golduck"},{num:36,name:"Golem"},{num:37,name:"Graveler"},{num:38,name:"Kingler"},{num:39,name:"Magmar"},{num:40,name:"Omastar"},{num:41,name:"Sandslash"},{num:42,name:"Seadra"},{num:43,name:"Slowbro"},{num:44,name:"Tentacruel"},{num:45,name:"Weezing"},{num:46,name:"Ekans"},{num:47,name:"Geodude"},{num:48,name:"Grimer"},{num:49,name:"Horsea"},{num:50,name:"Kabuto"},{num:51,name:"Krabby"},{num:52,name:"Omanyte"},{num:53,name:"Psyduck"},{num:54,name:"Shellder"},{num:55,name:"Slowpoke"},{num:56,name:"Tentacool"},{num:57,name:"Zubat"},{num:58,name:"Mr. Fuji"},{num:59,name:"Energy Search"},{num:60,name:"Gambler"},{num:61,name:"Recycle"},{num:62,name:"Mysterious Fossil"}];
+    const rocketCards = [{num:1,name:"Dark Alakazam"},{num:2,name:"Dark Arbok"},{num:3,name:"Dark Blastoise"},{num:4,name:"Dark Charizard"},{num:5,name:"Dark Dragonite"},{num:6,name:"Dark Dugtrio"},{num:7,name:"Dark Golbat"},{num:8,name:"Dark Gyarados"},{num:9,name:"Dark Hypno"},{num:10,name:"Dark Machamp"},{num:11,name:"Dark Magneton"},{num:12,name:"Dark Slowbro"},{num:13,name:"Dark Vileplume"},{num:14,name:"Dark Weezing"},{num:15,name:"Here Comes Team Rocket!"},{num:16,name:"Rocket's Sneak Attack"},{num:17,name:"Rainbow Energy"},{num:18,name:"Dark Alakazam"},{num:19,name:"Dark Arbok"},{num:20,name:"Dark Blastoise"},{num:21,name:"Dark Charizard"},{num:22,name:"Dark Dragonite"},{num:23,name:"Dark Dugtrio"},{num:24,name:"Dark Golbat"},{num:25,name:"Dark Gyarados"},{num:26,name:"Dark Hypno"},{num:27,name:"Dark Machamp"},{num:28,name:"Dark Magneton"},{num:29,name:"Dark Slowbro"},{num:30,name:"Dark Vileplume"},{num:31,name:"Dark Weezing"},{num:32,name:"Dark Charmeleon"},{num:33,name:"Dark Dragonair"},{num:34,name:"Dark Electrode"},{num:35,name:"Dark Flareon"},{num:36,name:"Dark Gloom"},{num:37,name:"Dark Golduck"},{num:38,name:"Dark Jolteon"},{num:39,name:"Dark Magneton"},{num:40,name:"Dark Machoke"},{num:41,name:"Dark Muk"},{num:42,name:"Dark Persian"},{num:43,name:"Dark Primeape"},{num:44,name:"Dark Rapidash"},{num:45,name:"Dark Vaporeon"},{num:46,name:"Dark Wartortle"},{num:47,name:"Magikarp"},{num:48,name:"Porygon"},{num:49,name:"Abra"},{num:50,name:"Charmander"},{num:51,name:"Dark Raticate"},{num:52,name:"Diglett"},{num:53,name:"Dratini"},{num:54,name:"Drowzee"},{num:55,name:"Eevee"},{num:56,name:"Ekans"},{num:57,name:"Grimer"},{num:58,name:"Koffing"},{num:59,name:"Machop"},{num:60,name:"Magnemite"},{num:61,name:"Mankey"},{num:62,name:"Meowth"},{num:63,name:"Oddish"},{num:64,name:"Ponyta"},{num:65,name:"Psyduck"},{num:66,name:"Rattata"},{num:67,name:"Slowpoke"},{num:68,name:"Squirtle"},{num:69,name:"Voltorb"},{num:70,name:"Zubat"},{num:71,name:"Here Comes Team Rocket!"},{num:72,name:"Rocket's Sneak Attack"},{num:73,name:"The Boss's Way"},{num:74,name:"Challenge"},{num:75,name:"Digger"},{num:76,name:"Imposter Oak's Revenge"},{num:77,name:"Nightly Garbage Run"},{num:78,name:"Goop Gas Attack"},{num:79,name:"Sleep!"},{num:80,name:"Rainbow Energy"},{num:81,name:"Full Heal Energy"},{num:82,name:"Potion Energy"},{num:83,name:"Dark Raichu"}];
+	
+    const sets = {
+        base: { name: "Base", color: "var(--base-c)", src: "base1", vars: ['unl', '1st', 'sdls', 'err'], cards: typeof baseCards !== 'undefined' ? baseCards : [] },
+        jungle: { name: "Jungle", color: "var(--jungle-c)", src: "base2", vars: ['unl', '1st', 'fp'], cards: typeof jungleCards !== 'undefined' ? jungleCards : [] },
+        fossil: { name: "Fossil", color: "var(--fossil-c)", src: "base3", vars: ['unl', '1st'], cards: typeof fossilCards !== 'undefined' ? fossilCards : [] },
+        rocket: { name: "Rocket", color: "var(--rocket-c)", src: "base5", vars: ['unl', '1st'], cards: typeof rocketCards !== 'undefined' ? rocketCards : [] }
+    };
+    
+    let state = JSON.parse(localStorage.getItem('master_tracker')) || { settings: { scale: 1.2 } };
+    let viewMode = 'grid';
+    let hiddenSets = new Set();
+    let currentModalKey = null;
+
+    document.documentElement.style.setProperty('--card-scale', state.settings.scale || 1.2);
+    
+    function updateScale(val) {
+        document.documentElement.style.setProperty('--card-scale', val);
+        state.settings.scale = parseFloat(val);
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+    }
+
+    function toggleView(mode) { viewMode = mode; render(); }
+    function toggleSet(sid, hidden) { hidden ? hiddenSets.add(sid) : hiddenSets.delete(sid); render(); }
+    function toggleValues(hidden) { document.body.classList.toggle('hide-values', hidden); }
+
+    function openModal(key) {
+        currentModalKey = key;
+        const [sid, num] = key.split('-');
+        const card = sets[sid].cards.find(c => c.num == num);
+        const d = state[key] || {};
+        const p = d.prices || { raw: { nm:0, lp:0, mp:0, hp:0 }, psa: { 8:0, 9:0, 10:0 } };
+        document.getElementById('modalLeft').innerHTML = `<img src="https://images.pokemontcg.io/${sets[sid].src}/${card.num}.png" style="width:200px"><h4>${card.name}</h4>`;
+        document.getElementById('priceData').innerHTML = `
+            <div><b>Raw NM:</b> $${p.raw.nm}</div><div><b>PSA 10:</b> $${p.psa['10'] || 0}</div>
+            <div><b>Raw LP:</b> $${p.raw.lp}</div><div><b>PSA 9:</b> $${p.psa['9'] || 0}</div>
+            <div><b>Raw MP:</b> $${p.raw.mp}</div><div><b>PSA 8:</b> $${p.psa['8'] || 0}</div>
+        `;
+        document.getElementById('valueModal').style.display = 'flex';
+    }
+
+    async function refreshCardPrices() {
+        const [sid, num] = currentModalKey.split('-');
+        try {
+            const res = await fetch(`https://api.pokemontcg.io/v2/cards/${sets[sid].src}-${num}`);
+            const data = (await res.json()).data;
+            if (!state[currentModalKey].prices) state[currentModalKey].prices = { raw: {}, psa: {} };
+            state[currentModalKey].prices.raw.nm = data.tcgplayer?.prices?.holofoil?.market || data.tcgplayer?.prices?.normal?.market || 0;
+            localStorage.setItem('master_tracker', JSON.stringify(state));
+            openModal(currentModalKey);
+        } catch(e) { alert("API Error"); }
+    }
+
+    function render() {
+        const app = document.getElementById('app');
+        const f = { hideOwned: document.getElementById('hideOwned').checked, hidePending: document.getElementById('hidePending').checked, hideUnl: document.getElementById('hideUnl').checked, hide1st: document.getElementById('hide1st').checked, hideSdls: document.getElementById('hideSdls').checked };
+        document.getElementById('sizeSlider').value = state.settings.scale;
+        
+        // Render Set Trackers
+        const trackerContainer = document.getElementById('setTrackers');
+        trackerContainer.innerHTML = '';
+        for (const [sid, set] of Object.entries(sets)) {
+            const percent = set.cards.length > 0 ? Math.round((set.cards.filter(c => state[`${sid}-${c.num}`]?.owned).length / set.cards.length) * 100) : 0;
+            trackerContainer.innerHTML += `<div class="set-row"><input type="checkbox" ${!hiddenSets.has(sid) ? 'checked' : ''} onchange="toggleSet('${sid}', !this.checked)"> <span style="width:60px">${set.name}</span> <div class="progress-bg"><div class="progress-fill" style="width:${percent}%"></div></div> <span>${percent}%</span></div>`;
+        }
+
+        app.innerHTML = '';
+        if (viewMode === 'table') {
+            let html = `<table id="binderTable"><tr><th>Set</th><th>Num</th><th>IMG</th><th>Name</th><th>Pending</th><th>Owned</th></tr>`;
+            for (const [sid, set] of Object.entries(sets)) {
+                if (hiddenSets.has(sid)) continue;
+                set.cards.forEach(c => {
+                    const d = state[`${sid}-${c.num}`] || {};
+                    html += `<tr><td>${set.name}</td><td>${c.num}</td><td><img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"></td><td>${c.name}</td><td>${d.pending ? '✅' : ''}</td><td>${d.owned ? '✅' : ''}</td></tr>`;
+                });
+            }
+            app.innerHTML = html + `</table>`;
+        } else {
+            for (const [sid, set] of Object.entries(sets)) {
+                if (hiddenSets.has(sid)) continue;
+                for(let i = 0; i < set.cards.length; i += 9) {
+                    const pageWrapper = document.createElement('div');
+                    pageWrapper.className = `page-wrapper`;
+                    pageWrapper.innerHTML = `<div class="page-header" style="color:${set.color}; border-color:${set.color}">${set.name} P${(i/9)+1}</div><div class="binder-page"></div>`;
+                    set.cards.slice(i, i + 9).forEach(c => {
+                        const key = `${sid}-${c.num}`, d = state[key] || {};
+                        if ((f.hideOwned && d.owned) || (f.hidePending && d.pending) || (f.hideUnl && d.unl) || (f.hide1st && d['1st']) || (f.hideSdls && d.sdls)) return;
+                        const slot = document.createElement('div');
+                        slot.className = `card-slot ${d.owned ? 'owned' : ''} ${d.pending ? 'pending' : ''}`;
+                        slot.innerHTML = `<img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"><div style="font-size:0.7rem">${c.num}</div><div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="update('${key}', 'pending', this.checked)"> Pending</div><table>${set.vars.map(v => `<tr><td><input type="checkbox" ${d[v] ? 'checked' : ''} onchange="update('${key}', '${v}', this.checked)"> ${v.toUpperCase()}</td><td class="price-col"><input type="number" class="price-input" value="${d[v+'Price'] || 0}" onchange="update('${key}', '${v+'Price'}', this.value)"></td></tr>`).join('')}</table><button onclick="openModal('${key}')">More Values</button>`;
+                        pageWrapper.querySelector('.binder-page').appendChild(slot);
+                    });
+                    app.appendChild(pageWrapper);
+                }
+            }
+        }
+    }
+
+    function update(key, variant, val) {
+        if(!state[key]) state[key] = {};
+        state[key][variant] = val;
+        state[key].owned = ['unl', '1st', 'sdls', 'err', 'fp'].some(k => state[key][k] === true);
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        render();
+    }
+    
+    function exportData() {
+        const a = document.createElement('a');
+        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        a.download = "master_tracker.json"; a.click();
+    }
+
+    function importData(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => { state = JSON.parse(e.target.result); localStorage.setItem('master_tracker', JSON.stringify(state)); render(); };
+        reader.readAsText(input.files[0]);
+    }
+    
+    render();
+</script>
+</body>
+</html>

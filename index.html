@@ -72,6 +72,24 @@
                 <label>Thumbnail/Card Scale</label><br>
                 <input type="range" id="sizeSlider" min="0.4" max="2.0" step="0.05" value="1.2" oninput="updateScale(this.value)">
             </div>
+            <div style="margin-top:15px;">
+                <label style="display:block; margin-bottom:5px;">TCG API Key</label>
+                <input type="text" id="apiKey" style="width:100%; padding:6px; background:#333; color:#fff; border:1px solid #555;" placeholder="Paste your JustTCG API key here">
+                <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+                    <button onclick="saveApiKey()">Save API Key</button>
+                    <button onclick="testJustTcgApiKey()">Test API Key</button>
+                    <button id="generateIdsBtn" onclick="startGenerateJustTcgMap()">Generate JUSTTCG ID Map</button>
+                    <button id="resumeMapBtn" style="display:none" onclick="startGenerateJustTcgMap()">Resume Mapping</button>
+                    <button id="downloadMapBtn" style="display:none" onclick="downloadJustTcgMap()">Download Map</button>
+                    <button id="copyMapBtn" style="display:none" onclick="copyJustTcgMap()">Copy Map</button>
+                </div>
+                <div id="jtcgGen" style="margin-top:8px; font-size:0.8rem; color:#ccc;">
+                    <div id="jtcgKeyStatus"></div>
+                    <div id="jtcgStatus"></div>
+                    <pre id="jtcgProgress" style="max-height:180px; overflow:auto; background:#111; padding:8px; border:1px solid #333; display:none;"></pre>
+                </div>
+                <div style="font-size:0.8rem; color:#ccc; margin-top:8px;">Use a JustTCG API key to fetch latest pricing. Without a key, the page can still search card variants but may not return prices. The generator will run from your browser and produce a JSON map you can download and paste into the script.</div>
+            </div>
         </div>
     </div>
 </div>
@@ -123,6 +141,278 @@
     function toggleSet(sid, hidden) { hidden ? hiddenSets.add(sid) : hiddenSets.delete(sid); render(); }
     function toggleValues(hidden) { document.body.classList.toggle('hide-values', hidden); }
 
+    function loadSavedApiKey() {
+        const savedKey = localStorage.getItem('justtcg_api_key');
+        if (savedKey) {
+            document.getElementById('apiKey').value = savedKey;
+            updateApiKeyStatus('Saved API key loaded.');
+        } else {
+            updateApiKeyStatus('No saved API key. Paste one and save it.');
+        }
+    }
+
+    function saveApiKey() {
+        const key = document.getElementById('apiKey').value.trim();
+        if (!key) return alert('Please enter an API key.');
+        localStorage.setItem('justtcg_api_key', key);
+        updateApiKeyStatus('API key saved. Click Test API Key to verify it.');
+        alert('API key saved.');
+    }
+
+    function getApiKey() {
+        const fieldKey = document.getElementById('apiKey').value.trim();
+        return fieldKey || localStorage.getItem('justtcg_api_key');
+    }
+
+    function updateApiKeyStatus(message) {
+        const status = document.getElementById('jtcgKeyStatus');
+        if (status) status.textContent = message;
+    }
+
+    function getJustTcgMappingStats(map) {
+        const keys = Object.keys(map || {});
+        const mapped = keys.filter(key => typeof map[key] === 'string' && map[key].trim().length > 0);
+        const totalCards = Object.values(sets).reduce((sum, set) => sum + set.cards.length, 0);
+        return {
+            totalKeys: keys.length,
+            mappedKeys: mapped.length,
+            totalCards,
+            complete: mapped.length === totalCards && keys.length === totalCards
+        };
+    }
+
+    function updateResumeMapButton(stats) {
+        const button = document.getElementById('resumeMapBtn');
+        if (!button) return;
+        if (stats.complete || stats.totalKeys === 0) {
+            button.style.display = 'none';
+        } else {
+            button.style.display = 'inline-block';
+        }
+    }
+
+    function updateJustTcgStatus(map, prefix = '') {
+        const status = document.getElementById('jtcgStatus');
+        const stats = getJustTcgMappingStats(map);
+        if (stats.totalKeys === 0) {
+            status.textContent = `${prefix}No saved mapping found.`;
+            return;
+        }
+        if (stats.complete) {
+            status.textContent = `${prefix}All ${stats.totalCards} card IDs are mapped.`;
+            return;
+        }
+        status.textContent = `${prefix}Saved mapping loaded: ${stats.mappedKeys}/${stats.totalCards} entries mapped.`;
+    }
+
+    function loadSavedJustTcgMap() {
+        const saved = localStorage.getItem('justtcg_mapping');
+        if (!saved) {
+            updateResumeMapButton({ totalKeys: 0, mappedKeys: 0, totalCards: 0, complete: false });
+            return {};
+        }
+        try {
+            const map = JSON.parse(saved);
+            if (map && typeof map === 'object') {
+                window._JUSTTCG_GENERATED = map;
+                document.getElementById('downloadMapBtn').style.display = 'inline-block';
+                document.getElementById('copyMapBtn').style.display = 'inline-block';
+                updateJustTcgStatus(map);
+                updateResumeMapButton(getJustTcgMappingStats(map));
+                return map;
+            }
+        } catch (err) {
+            console.warn('Could not parse saved JustTCG mapping:', err);
+        }
+        updateResumeMapButton({ totalKeys: 0, mappedKeys: 0, totalCards: 0, complete: false });
+        return {};
+    }
+
+    function saveJustTcgMap(map) {
+        window._JUSTTCG_GENERATED = map;
+        localStorage.setItem('justtcg_mapping', JSON.stringify(map));
+        updateJustTcgStatus(map, 'Saved: ');
+        updateResumeMapButton(getJustTcgMappingStats(map));
+    }
+
+    async function testJustTcgApiKey() {
+        const apiKey = getApiKey();
+        if (!apiKey) return alert('Enter or save your JustTCG API key first.');
+        updateApiKeyStatus('Testing API key...');
+        try {
+            const res = await fetch('https://api.justtcg.com/v1/games', {
+                headers: { 'x-api-key': apiKey, 'Accept': 'application/json' }
+            });
+            if (res.status === 200) {
+                updateApiKeyStatus('API key is valid.');
+                const json = await res.json();
+                document.getElementById('jtcgStatus').textContent = `Games loaded: ${Array.isArray(json.data) ? json.data.length : 'unknown'}`;
+            } else if (res.status === 401) {
+                updateApiKeyStatus('Unauthorized (401) - key rejected. Please verify your API key.');
+                document.getElementById('jtcgStatus').textContent = 'Error: Unauthorized (401)';
+            } else {
+                const text = await res.text();
+                updateApiKeyStatus(`Unexpected response ${res.status}`);
+                document.getElementById('jtcgStatus').textContent = `Error: ${res.status} ${text}`;
+            }
+        } catch (err) {
+            updateApiKeyStatus('Network or CORS error while testing API key.');
+            document.getElementById('jtcgStatus').textContent = `Error testing API key: ${err.message}`;
+        }
+    }
+
+    // --- JUSTTCG ID generator (runs in browser using your saved API key) ---
+    function sleep(ms){return new Promise(r=>setTimeout(r, ms));}
+
+    async function startGenerateJustTcgMap(){
+        const apiKey = getApiKey();
+        if(!apiKey) return alert('Save your JustTCG API key first.');
+        const savedMap = loadSavedJustTcgMap();
+        const statsBefore = getJustTcgMappingStats(savedMap);
+        if (statsBefore.complete) {
+            document.getElementById('jtcgStatus').textContent = `All ${statsBefore.totalCards} card IDs are already mapped.`;
+            return;
+        }
+        document.getElementById('generateIdsBtn').disabled = true;
+        document.getElementById('jtcgProgress').style.display = 'block';
+        document.getElementById('jtcgProgress').textContent = '';
+        document.getElementById('jtcgStatus').textContent = 'Starting mapping...';
+        try{
+            const map = await generateJustTcgMap(apiKey);
+            saveJustTcgMap(map);
+            const stats = getJustTcgMappingStats(map);
+            if (stats.complete) {
+                document.getElementById('jtcgStatus').textContent = `Mapping complete: all ${stats.totalCards} card IDs have been mapped.`;
+            } else {
+                document.getElementById('jtcgStatus').textContent = `Mapping complete: ${stats.mappedKeys}/${stats.totalCards} entries mapped.`;
+            }
+            document.getElementById('downloadMapBtn').style.display = 'inline-block';
+            document.getElementById('copyMapBtn').style.display = 'inline-block';
+            document.getElementById('jtcgProgress').textContent += '\n--- JSON snippet below ---\n' + JSON.stringify(map, null, 2);
+        }catch(e){
+            document.getElementById('jtcgStatus').textContent = 'Error: ' + e.message;
+            document.getElementById('jtcgProgress').textContent += '\nError: '+e.message;
+        } finally {
+            document.getElementById('generateIdsBtn').disabled = false;
+        }
+    }
+
+    async function generateJustTcgMap(apiKey){
+        const delayMs = 300; // per-request delay
+        const header = { 'x-api-key': apiKey, 'Accept': 'application/json' };
+        const savedMap = loadSavedJustTcgMap() || {};
+        const mapping = { ...savedMap };
+        const setsList = Object.entries(sets);
+        for(const [sid, s] of setsList){
+            for(const c of s.cards){
+                const key = `${sid}-${c.num}`;
+                if (!(key in mapping)) {
+                    mapping[key] = null;
+                }
+            }
+        }
+
+        for(const [sid, s] of setsList){
+            for(const c of s.cards){
+                const key = `${sid}-${c.num}`;
+                if (mapping[key]) {
+                    document.getElementById('jtcgProgress').textContent += `\n[SKIP] ${key} already mapped`;
+                    continue;
+                }
+
+                const name = c.name.replace(/"/g,'\\"');
+                const setName = s.name.replace(/"/g,'\\"');
+                const num = c.num;
+                const q = `name:"${name}" set_name:"${setName}" number:"${num}" game:"Pokemon"`;
+                const url = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(q)}&limit=3`;
+                let tried = 0, res = null;
+                while(tried < 6){
+                    try{
+                        const r = await fetch(url, { headers: header });
+                        if(r.status === 200){
+                            const j = await r.json();
+                            if(Array.isArray(j.data) && j.data.length){
+                                // prefer exact matches
+                                let chosen = j.data.find(it => String(it.number) === String(num) && (it.name||'').trim().toLowerCase() === c.name.trim().toLowerCase()) || j.data[0];
+                                mapping[key] = chosen.id;
+                                saveJustTcgMap(mapping);
+                                document.getElementById('jtcgProgress').textContent += `\n[OK] ${key} -> ${mapping[key]}`;
+                                break;
+                            } else {
+                                mapping[key] = null;
+                                saveJustTcgMap(mapping);
+                                document.getElementById('jtcgProgress').textContent += `\n[NOHIT] ${key}`;
+                                break;
+                            }
+                        } else if(r.status === 429){
+                            const backoff = Math.min(5000, (2**tried)*200);
+                            document.getElementById('jtcgProgress').textContent += `\n[429] backing off ${backoff}ms`;
+                            await sleep(backoff);
+                        } else if(r.status === 401){
+                            throw new Error('Unauthorized (401) - check your API key saved in the page');
+                        } else {
+                            document.getElementById('jtcgProgress').textContent += `\n[ERR ${r.status}] ${key}`;
+                            break;
+                        }
+                    }catch(e){
+                        document.getElementById('jtcgProgress').textContent += `\n[EX] ${key} ${e}`;
+                        if(String(e).includes('429')){ await sleep(1000); tried++; continue; }
+                        if(String(e).includes('Unauthorized') || String(e).includes('401')) throw e;
+                        break;
+                    }
+                    tried++;
+                }
+                await sleep(delayMs);
+            }
+        }
+        return mapping;
+    }
+
+    function downloadJustTcgMap(){
+        const map = window._JUSTTCG_GENERATED || {};
+        const blob = new Blob([JSON.stringify(map, null, 2)], {type:'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'justtcg_mapping.json'; a.click();
+    }
+
+    async function copyJustTcgMap(){
+        const map = window._JUSTTCG_GENERATED || {};
+        try{ await navigator.clipboard.writeText(JSON.stringify(map, null, 2)); alert('Mapping copied to clipboard'); }
+        catch(e){ alert('Copy failed — please download the JSON instead.'); }
+    }
+
+    function getPriceLabel(value) {
+        return value != null ? `$${Number(value).toFixed(2)}` : 'N/A';
+    }
+
+    function displayPriceRows(card, key) {
+        const rows = [];
+        const market = card.market || {};
+        const prices = card.prices || {};
+
+        if (typeof card.price === 'number') {
+            rows.push(`<div><b>Price:</b> ${getPriceLabel(card.price)}</div>`);
+        }
+
+        if (Object.keys(prices).length > 0) {
+            if (prices.normal) rows.push(`<div><b>Normal:</b> ${getPriceLabel(prices.normal)}</div>`);
+            if (prices.holofoil) rows.push(`<div><b>Holofoil:</b> ${getPriceLabel(prices.holofoil)}</div>`);
+            if (prices.reverseHolofoil) rows.push(`<div><b>Reverse Holo:</b> ${getPriceLabel(prices.reverseHolofoil)}</div>`);
+            if (prices.gx) rows.push(`<div><b>GX:</b> ${getPriceLabel(prices.gx)}</div>`);
+        }
+
+        if (Object.keys(market).length > 0) {
+            if (market.average != null) rows.push(`<div><b>Market Avg:</b> ${getPriceLabel(market.average)}</div>`);
+            if (market.low != null) rows.push(`<div><b>Low:</b> ${getPriceLabel(market.low)}</div>`);
+            if (market.high != null) rows.push(`<div><b>High:</b> ${getPriceLabel(market.high)}</div>`);
+        }
+
+        if (rows.length === 0) {
+            rows.push(`<div>No pricing data available for this variant.</div>`);
+        }
+
+        return rows.join('');
+    }
+
     function openModal(key) {
         currentModalKey = key;
         const [sid, num] = key.split('-');
@@ -138,16 +428,142 @@
         document.getElementById('valueModal').style.display = 'flex';
     }
 
-    async function refreshCardPrices() {
-        const [sid, num] = currentModalKey.split('-');
-        try {
-            const res = await fetch(`https://api.pokemontcg.io/v2/cards/${sets[sid].src}-${num}`);
-            const data = (await res.json()).data;
-            if (!state[currentModalKey].prices) state[currentModalKey].prices = { raw: {}, psa: {} };
-            state[currentModalKey].prices.raw.nm = data.tcgplayer?.prices?.holofoil?.market || data.tcgplayer?.prices?.normal?.market || 0;
+    const JUSTTCG_IDS = {
+        'base-1': 'pokemon-base-set-shadowless-pokemon-base-set-shadowless-unlimited-edition-booster-pack',
+        'base-2': 'pokemon-japan-sv2a-pokemon-card-151-pokemon-card-151-card-file-set-venusaur-charizard-blastoise',
+        'base-3': 'pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3',
+        'base-4': 'pokemon-japan-sv2a-pokemon-card-151-pokemon-card-151-card-file-set-venusaur-charizard-blastoise',
+        'base-22': 'pokemon-base-set-shadowless-pokemon-base-set-shadowless-unlimited-edition-booster-pack',
+        'base-23': 'pokemon-base-set-shadowless-pokemon-base-set-shadowless-unlimited-edition-booster-pack'
+    };
+
+    async function resolveJustTcgCardData(card, key) {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            alert('Enter a JustTCG API key first and save it.');
+            return null;
+        }
+
+        const [sid] = key.split('-');
+        const cardId = state[key]?.justtcgCardId || JUSTTCG_IDS[key];
+        const escapedName = card.name.replace(/"/g, '\\"');
+        const escapedSetName = sets[sid].name.replace(/"/g, '\\"');
+        let url;
+
+        if (cardId) {
+            url = `https://api.justtcg.com/v1/cards?cardId=${encodeURIComponent(cardId)}`;
+        } else {
+            const query = `name:"${escapedName}" set_name:"${escapedSetName}" number:"${card.num}" game:"Pokemon"`;
+            url = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(query)}&limit=1`;
+        }
+
+        const res = await fetch(url, {
+            headers: {
+                'x-api-key': apiKey,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Failed to fetch card data. (Status: ${res.status}) ${errorText}`);
+        }
+
+        const json = await res.json();
+        const cards = Array.isArray(json.data) ? json.data : [];
+        if (!cards.length) {
+            return null;
+        }
+
+        if (!cardId && cards[0].id) {
+            state[key] = state[key] || {};
+            state[key].justtcgCardId = cards[0].id;
             localStorage.setItem('master_tracker', JSON.stringify(state));
-            openModal(currentModalKey);
-        } catch(e) { alert("API Error"); }
+        }
+
+        return cards;
+    }
+
+    function extractVariantsFromCards(cards) {
+        const variantMap = new Map();
+
+        cards.forEach(cardItem => {
+            if (cardItem.variants && Array.isArray(cardItem.variants)) {
+                cardItem.variants.forEach(v => {
+                    const id = v.variantId || v.id || v.cardId || `${cardItem.id || cardItem.cardId}-${v.number || ''}`;
+                    if (!variantMap.has(id)) {
+                        variantMap.set(id, {
+                            id,
+                            setName: v.set?.name || v.set || cardItem.set?.name || cardItem.set,
+                            number: v.number || cardItem.number,
+                            rarity: v.rarity || cardItem.rarity,
+                            price: v.price || null,
+                            prices: v.prices || {},
+                            market: v.market || {}
+                        });
+                    }
+                });
+            } else {
+                const id = cardItem.variantId || cardItem.id || cardItem.cardId || `${cardItem.set?.name || cardItem.set}-${cardItem.number}`;
+                if (!variantMap.has(id)) {
+                    variantMap.set(id, {
+                        id,
+                        setName: cardItem.set?.name || cardItem.set,
+                        number: cardItem.number,
+                        rarity: cardItem.rarity,
+                        price: cardItem.price || null,
+                        prices: cardItem.prices || {},
+                        market: cardItem.market || {}
+                    });
+                }
+            }
+        });
+
+        return Array.from(variantMap.values());
+    }
+
+    async function refreshCardPrices() {
+        if (!currentModalKey) return;
+
+        const [sid, num] = currentModalKey.split('-');
+        const card = sets[sid].cards.find(c => c.num == num);
+
+        try {
+            const cards = await resolveJustTcgCardData(card, currentModalKey);
+            if (!cards || !cards.length) {
+                alert('No card variants were returned for this card.');
+                return;
+            }
+
+            const variants = extractVariantsFromCards(cards);
+            state[currentModalKey] = state[currentModalKey] || {};
+            state[currentModalKey].variants = variants;
+            localStorage.setItem('master_tracker', JSON.stringify(state));
+            alert('Variants refreshed successfully!');
+            showVariantsModal(currentModalKey);
+        } catch (e) {
+            console.error('Fetch error:', e);
+            alert('Error fetching data: ' + e.message);
+        }
+    }
+
+    function showVariantsModal(key) {
+        currentModalKey = key;
+        const [sid, num] = key.split('-');
+        const card = sets[sid].cards.find(c => c.num == num);
+        const data = state[key] || {};
+        const variants = data.variants || [];
+
+        const variantHtml = variants.length ? variants.map(v => `
+            <div style="border:1px solid #444; padding:10px; border-radius:8px; background:#111;">
+                <div><b>${v.setName} #${v.number}</b> ${v.rarity || ''}</div>
+                ${displayPriceRows(v, key)}
+            </div>
+        `).join('') : '<div>No variants stored yet. Click Refresh API Prices.</div>';
+
+        document.getElementById('modalLeft').innerHTML = `<img src="https://images.pokemontcg.io/${sets[sid].src}/${card.num}.png" style="width:200px"><h4>${card.name}</h4>`;
+        document.getElementById('priceData').innerHTML = variantHtml;
+        document.getElementById('valueModal').style.display = 'flex';
     }
 
     function render() {
@@ -215,6 +631,8 @@
         reader.readAsText(input.files[0]);
     }
     
+    loadSavedApiKey();
+    loadSavedJustTcgMap();
     render();
 </script>
 </body>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
 <style>
@@ -50,6 +50,9 @@
     .modal-left { flex: 1; text-align: center; }
     .modal-right { flex: 2; }
     .val-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .loading-row { display: none; align-items: center; gap: 10px; margin: 8px 0 12px 0; color: #b7d6ff; font-size: 0.9rem; }
+    .spinner { width: 14px; height: 14px; border: 2px solid #35506e; border-top-color: #4da3ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -116,9 +119,15 @@
         <div class="modal-left" id="modalLeft"></div>
         <div class="modal-right">
             <h3>Market & Grading Values</h3>
+            <div id="modalLoading" class="loading-row"><span class="spinner"></span><span id="modalLoadingText">Loading prices...</span></div>
+            <div id="versionPills" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;"></div>
+            <div style="margin-bottom:10px; padding:8px; background:#f0f0f0; border-radius:4px; font-size:12px;">
+                <strong>Card ID:</strong> <span id="currentCardId" style="font-family:monospace; word-break:break-all;">Not resolved yet</span>
+            </div>
             <div id="priceData" class="val-grid"></div>
-            <div style="margin-top:20px;">
-                <button onclick="refreshCardPrices()">Refresh API Prices</button>
+            <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
+                <button id="resolveIdBtn" onclick="resolveCardId()">Resolve Card ID</button>
+                <button id="refreshPricesBtn" onclick="refreshCardPrices()">Refresh API Prices</button>
                 <button onclick="document.getElementById('valueModal').style.display='none'">Close</button>
             </div>
         </div>
@@ -126,17 +135,330 @@
 </div>
 
 <script>
+    const EMBEDDED_JUSTTCG_MAPPING = {
+    "base-1":  null,
+    "base-10":  "pokemon-pokemon-go-pokemon-go-melmetal-v-mewtwo-v-battle-decks-set-of-2",
+    "base-100":  "pokemon-league-championship-cards-grass-energy-105-114-play-exclamation-pokemon-promo",
+    "base-101":  "pokemon-league-championship-cards-lightning-energy-108-114-play-exclamation-pokemon-promo",
+    "base-102":  "pokemon-league-championship-cards-psychic-energy-109-114-play-exclamation-pokemon-promo-promo",
+    "base-11":  null,
+    "base-12":  null,
+    "base-13":  null,
+    "base-14":  null,
+    "base-15":  null,
+    "base-16":  null,
+    "base-17":  null,
+    "base-18":  null,
+    "base-19":  null,
+    "base-2":  null,
+    "base-20":  null,
+    "base-21":  null,
+    "base-22":  null,
+    "base-23":  null,
+    "base-24":  null,
+    "base-25":  null,
+    "base-26":  null,
+    "base-27":  null,
+    "base-28":  null,
+    "base-29":  null,
+    "base-3":  "pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3",
+    "base-30":  null,
+    "base-31":  "pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3",
+    "base-32":  null,
+    "base-33":  null,
+    "base-34":  null,
+    "base-35":  null,
+    "base-36":  null,
+    "base-37":  null,
+    "base-38":  null,
+    "base-39":  "pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3",
+    "base-4":  null,
+    "base-40":  null,
+    "base-41":  null,
+    "base-42":  null,
+    "base-43":  null,
+    "base-44":  "pokemon-miscellaneous-cards-products-bulbasaur-pokemon-day-2026-common",
+    "base-45":  null,
+    "base-46":  "pokemon-pokemon-go-pokemon-go-pin-collection-charmander",
+    "base-47":  null,
+    "base-48":  null,
+    "base-49":  null,
+    "base-5":  null,
+    "base-50":  null,
+    "base-51":  null,
+    "base-52":  null,
+    "base-53":  null,
+    "base-54":  null,
+    "base-55":  null,
+    "base-56":  "pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3",
+    "base-57":  null,
+    "base-58":  "pokemon-pikachu-world-collection-promos-pikachu-base-set-promo",
+    "base-59":  null,
+    "base-6":  "pokemon-hgss-trainer-kit-gyarados-raichu-poke-ball-gyarados-common",
+    "base-60":  null,
+    "base-61":  null,
+    "base-62":  null,
+    "base-63":  "pokemon-pokemon-go-pokemon-go-pin-collection-squirtle",
+    "base-64":  "pokemon-base-set-shadowless-pokemon-2-player-starter-set",
+    "base-65":  "pokemon-base-set-shadowless-pokemon-2-player-starter-set",
+    "base-66":  null,
+    "base-67":  null,
+    "base-68":  null,
+    "base-69":  null,
+    "base-7":  "pokemon-jumbo-cards-hitmonchan-2-best-of-game-2-promo-promo",
+    "base-70":  null,
+    "base-71":  "pokemon-base-set-2-computer-search-rare",
+    "base-72":  "pokemon-base-set-devolution-spray-rare",
+    "base-73":  null,
+    "base-74":  null,
+    "base-75":  null,
+    "base-76":  "pokemon-swsh03-darkness-ablaze-pokemon-breeder-s-nurturing-secret-secret-rare",
+    "base-77":  "pokemon-base-set-2-pokemon-trader-rare",
+    "base-78":  null,
+    "base-79":  "pokemon-base-set-2-super-energy-removal-rare",
+    "base-8":  "pokemon-deck-exclusives-machamp-8-102-base-set-shadowless-holo-rare",
+    "base-80":  null,
+    "base-81":  null,
+    "base-82":  "pokemon-league-championship-cards-grass-energy-88-95-play-exclamation-pokemon-promo",
+    "base-83":  null,
+    "base-84":  null,
+    "base-85":  null,
+    "base-86":  null,
+    "base-87":  null,
+    "base-88":  null,
+    "base-89":  "pokemon-sm-cosmic-eclipse-professor-oak-s-setup-uncommon",
+    "base-9":  null,
+    "base-90":  "pokemon-base-set-pokemon-2-player-starter-set-revised-base-set-reprint-run",
+    "base-91":  "pokemon-base-set-2-super-potion-uncommon",
+    "base-92":  "pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3",
+    "base-93":  "pokemon-base-set-2-super-energy-removal-rare",
+    "base-94":  "pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3",
+    "base-95":  null,
+    "base-96":  null,
+    "base-97":  "pokemon-sm-guardians-rising-double-colorless-energy-secret-secret-rare",
+    "base-98":  "pokemon-league-championship-cards-fighting-energy-93-95-play-exclamation-pokemon-promo",
+    "base-99":  "pokemon-league-championship-cards-fire-energy-89-95-play-exclamation-pokemon-promo",
+    "fossil-1":  null,
+    "fossil-10":  null,
+    "fossil-11":  null,
+    "fossil-12":  null,
+    "fossil-13":  null,
+    "fossil-14":  null,
+    "fossil-15":  null,
+    "fossil-16":  null,
+    "fossil-17":  null,
+    "fossil-18":  null,
+    "fossil-19":  null,
+    "fossil-2":  null,
+    "fossil-20":  null,
+    "fossil-21":  null,
+    "fossil-22":  null,
+    "fossil-23":  null,
+    "fossil-24":  null,
+    "fossil-25":  null,
+    "fossil-26":  null,
+    "fossil-27":  null,
+    "fossil-28":  null,
+    "fossil-29":  null,
+    "fossil-3":  null,
+    "fossil-30":  null,
+    "fossil-31":  null,
+    "fossil-32":  null,
+    "fossil-33":  null,
+    "fossil-34":  null,
+    "fossil-35":  null,
+    "fossil-36":  null,
+    "fossil-37":  null,
+    "fossil-38":  null,
+    "fossil-39":  null,
+    "fossil-4":  null,
+    "fossil-40":  null,
+    "fossil-41":  null,
+    "fossil-42":  null,
+    "fossil-43":  null,
+    "fossil-44":  null,
+    "fossil-45":  null,
+    "fossil-46":  null,
+    "fossil-47":  null,
+    "fossil-48":  null,
+    "fossil-49":  null,
+    "fossil-5":  null,
+    "fossil-50":  null,
+    "fossil-51":  null,
+    "fossil-52":  null,
+    "fossil-53":  null,
+    "fossil-54":  null,
+    "fossil-55":  null,
+    "fossil-56":  null,
+    "fossil-57":  null,
+    "fossil-58":  null,
+    "fossil-59":  null,
+    "fossil-6":  null,
+    "fossil-60":  null,
+    "fossil-61":  null,
+    "fossil-62":  null,
+    "fossil-7":  null,
+    "fossil-8":  null,
+    "fossil-9":  null,
+    "jungle-1":  null,
+    "jungle-10":  null,
+    "jungle-11":  "pokemon-pokemon-go-pokemon-go-tin-snorlax",
+    "jungle-12":  null,
+    "jungle-13":  null,
+    "jungle-14":  null,
+    "jungle-15":  null,
+    "jungle-16":  null,
+    "jungle-17":  null,
+    "jungle-18":  null,
+    "jungle-19":  null,
+    "jungle-2":  null,
+    "jungle-20":  null,
+    "jungle-21":  null,
+    "jungle-22":  null,
+    "jungle-23":  null,
+    "jungle-24":  null,
+    "jungle-25":  null,
+    "jungle-26":  null,
+    "jungle-27":  null,
+    "jungle-28":  "pokemon-wotc-promo-rapidash-pokemon-center-ny-promo",
+    "jungle-29":  null,
+    "jungle-3":  null,
+    "jungle-30":  null,
+    "jungle-31":  null,
+    "jungle-32":  null,
+    "jungle-33":  null,
+    "jungle-34":  null,
+    "jungle-35":  null,
+    "jungle-36":  null,
+    "jungle-37":  null,
+    "jungle-38":  null,
+    "jungle-39":  null,
+    "jungle-4":  null,
+    "jungle-40":  null,
+    "jungle-41":  null,
+    "jungle-42":  null,
+    "jungle-43":  null,
+    "jungle-44":  "pokemon-pikachu-world-collection-promos-pikachu-jungle-promo",
+    "jungle-45":  null,
+    "jungle-46":  null,
+    "jungle-47":  null,
+    "jungle-48":  null,
+    "jungle-49":  null,
+    "jungle-5":  null,
+    "jungle-50":  null,
+    "jungle-51":  null,
+    "jungle-52":  null,
+    "jungle-53":  null,
+    "jungle-54":  null,
+    "jungle-55":  null,
+    "jungle-56":  null,
+    "jungle-57":  null,
+    "jungle-58":  null,
+    "jungle-59":  null,
+    "jungle-6":  null,
+    "jungle-60":  "pokemon-wotc-promo-rapidash-pokemon-center-ny-promo",
+    "jungle-61":  null,
+    "jungle-62":  null,
+    "jungle-63":  null,
+    "jungle-64":  null,
+    "jungle-7":  null,
+    "jungle-8":  null,
+    "jungle-9":  null,
+    "rocket-1":  null,
+    "rocket-10":  null,
+    "rocket-11":  null,
+    "rocket-12":  null,
+    "rocket-13":  null,
+    "rocket-14":  null,
+    "rocket-15":  null,
+    "rocket-16":  null,
+    "rocket-17":  null,
+    "rocket-18":  null,
+    "rocket-19":  null,
+    "rocket-2":  null,
+    "rocket-20":  null,
+    "rocket-21":  null,
+    "rocket-22":  null,
+    "rocket-23":  null,
+    "rocket-24":  null,
+    "rocket-25":  "pokemon-team-rocket-dark-gyarados-25-rare",
+    "rocket-26":  null,
+    "rocket-27":  null,
+    "rocket-28":  null,
+    "rocket-29":  null,
+    "rocket-3":  null,
+    "rocket-30":  null,
+    "rocket-31":  null,
+    "rocket-32":  null,
+    "rocket-33":  null,
+    "rocket-34":  null,
+    "rocket-35":  null,
+    "rocket-36":  null,
+    "rocket-37":  null,
+    "rocket-38":  null,
+    "rocket-39":  null,
+    "rocket-4":  null,
+    "rocket-40":  null,
+    "rocket-41":  null,
+    "rocket-42":  null,
+    "rocket-43":  null,
+    "rocket-44":  null,
+    "rocket-45":  null,
+    "rocket-46":  null,
+    "rocket-47":  null,
+    "rocket-48":  null,
+    "rocket-49":  null,
+    "rocket-5":  null,
+    "rocket-50":  null,
+    "rocket-51":  null,
+    "rocket-52":  null,
+    "rocket-53":  null,
+    "rocket-54":  null,
+    "rocket-55":  null,
+    "rocket-56":  null,
+    "rocket-57":  null,
+    "rocket-58":  null,
+    "rocket-59":  null,
+    "rocket-6":  null,
+    "rocket-60":  null,
+    "rocket-61":  null,
+    "rocket-62":  null,
+    "rocket-63":  null,
+    "rocket-64":  null,
+    "rocket-65":  null,
+    "rocket-66":  null,
+    "rocket-67":  null,
+    "rocket-68":  null,
+    "rocket-69":  null,
+    "rocket-7":  null,
+    "rocket-70":  null,
+    "rocket-71":  null,
+    "rocket-72":  null,
+    "rocket-73":  null,
+    "rocket-74":  null,
+    "rocket-75":  null,
+    "rocket-76":  null,
+    "rocket-77":  null,
+    "rocket-78":  null,
+    "rocket-79":  null,
+    "rocket-8":  null,
+    "rocket-80":  null,
+    "rocket-81":  null,
+    "rocket-82":  null,
+    "rocket-83":  null,
+    "rocket-9":  null
+};
     // PASTE YOUR ARRAYS HERE
-    const baseCards = [{num:1,name:"Alakazam"},{num:2,name:"Blastoise",hasError:true},{num:3,name:"Chansey"},{num:4,name:"Charizard"},{num:5,name:"Clefairy"},{num:6,name:"Gyarados"},{num:7,name:"Hitmonchan"},{num:8,name:"Machamp",hasError:true},{num:9,name:"Magneton"},{num:10,name:"Mewtwo"},{num:11,name:"Nidoking"},{num:12,name:"Ninetales",hasError:true},{num:13,name:"Poliwrath"},{num:14,name:"Raichu"},{num:15,name:"Venusaur"},{num:16,name:"Zapdos"},{num:17,name:"Beedrill"},{num:18,name:"Dragonair"},{num:19,name:"Dugtrio"},{num:20,name:"Electabuzz"},{num:21,name:"Electrode"},{num:22,name:"Pidgeotto"},{num:23,name:"Arcanine"},{num:24,name:"Charmeleon"},{num:25,name:"Dewgong"},{num:26,name:"Dratini"},{num:27,name:"Farfetch'd"},{num:28,name:"Growlithe"},{num:29,name:"Haunter"},{num:30,name:"Ivysaur"},{num:31,name:"Jynx"},{num:32,name:"Kadabra"},{num:33,name:"Kakuna"},{num:34,name:"Machoke"},{num:35,name:"Magikarp"},{num:36,name:"Magmar"},{num:37,name:"Nidorino"},{num:38,name:"Poliwhirl"},{num:39,name:"Porygon"},{num:40,name:"Raticate"},{num:41,name:"Seel"},{num:42,name:"Wartortle"},{num:43,name:"Abra"},{num:44,name:"Bulbasaur"},{num:45,name:"Caterpie"},{num:46,name:"Charmander"},{num:47,name:"Diglett"},{num:48,name:"Doduo"},{num:49,name:"Drowzee"},{num:50,name:"Gastly"},{num:51,name:"Koffing"},{num:52,name:"Machop"},{num:53,name:"Magnemite"},{num:54,name:"Metapod"},{num:55,name:"Nidoran ♂"},{num:56,name:"Onix"},{num:57,name:"Pidgey"},{num:58,name:"Pikachu",hasError:true},{num:59,name:"Poliwag"},{num:60,name:"Ponyta"},{num:61,name:"Rattata"},{num:62,name:"Sandshrew"},{num:63,name:"Squirtle"},{num:64,name:"Starmie"},{num:65,name:"Staryu"},{num:66,name:"Tangela"},{num:67,name:"Voltorb"},{num:68,name:"Vulpix"},{num:69,name:"Weedle"},{num:70,name:"Clefairy Doll"},{num:71,name:"Computer Search"},{num:72,name:"Devolution Spray"},{num:73,name:"Full Heal"},{num:74,name:"Item Finder"},{num:75,name:"Lass"},{num:76,name:"Pokémon Breeder"},{num:77,name:"Pokémon Trader"},{num:78,name:"Scoop Up"},{num:79,name:"Super Energy Removal"},{num:80,name:"Defender"},{num:81,name:"Energy Retrieval"},{num:82,name:"Grass Energy"},{num:83,name:"Healing Field"},{num:84,name:"Maintenance"},{num:85,name:"PlusPower"},{num:86,name:"Pokémon Center"},{num:87,name:"Pokémon Flute"},{num:88,name:"Pokedex"},{num:89,name:"Professor Oak"},{num:90,name:"Revive"},{num:91,name:"Super Potion"},{num:92,name:"Bill"},{num:93,name:"Energy Removal"},{num:94,name:"Gust of Wind"},{num:95,name:"Potion"},{num:96,name:"Switch"},{num:97,name:"Double Colorless Energy"},{num:98,name:"Fighting Energy"},{num:99,name:"Fire Energy"},{num:100,name:"Grass Energy"},{num:101,name:"Lightning Energy"},{num:102,name:"Psychic Energy"}]; 
-    const jungleCards = [{num:1,name:"Clefable"},{num:2,name:"Electrode"},{num:3,name:"Flareon"},{num:4,name:"Jolteon"},{num:5,name:"Kangaskhan"},{num:6,name:"Mr. Mime"},{num:7,name:"Nidoqueen"},{num:8,name:"Pidgeot"},{num:9,name:"Pinsir"},{num:10,name:"Scyther"},{num:11,name:"Snorlax"},{num:12,name:"Vaporeon"},{num:13,name:"Venomoth"},{num:14,name:"Victreebel"},{num:15,name:"Vileplume"},{num:16,name:"Wigglytuff"},{num:17,name:"Butterfree"},{num:18,name:"Dodrio"},{num:19,name:"Exeggutor"},{num:20,name:"Fearow"},{num:21,name:"Gloom"},{num:22,name:"Lickitung"},{num:23,name:"Marowak"},{num:24,name:"Nidorina"},{num:25,name:"Parasect"},{num:26,name:"Persian"},{num:27,name:"Primeape"},{num:28,name:"Rapidash"},{num:29,name:"Rhydon"},{num:30,name:"Seaking"},{num:31,name:"Tauros"},{num:32,name:"Weepinbell"},{num:33,name:"Bellsprout"},{num:34,name:"Cubone"},{num:35,name:"Eevee"},{num:36,name:"Exeggcute"},{num:37,name:"Goldeen"},{num:38,name:"Jigglypuff"},{num:39,name:"Mankey"},{num:40,name:"Meowth"},{num:41,name:"Nidoran ♀"},{num:42,name:"Oddish"},{num:43,name:"Paras"},{num:44,name:"Pikachu"},{num:45,name:"Rhyhorn"},{num:46,name:"Spearow"},{num:47,name:"Venonat"},{num:48,name:"Poke Ball"},{num:49,name:"Butterfree"},{num:50,name:"Dodrio"},{num:51,name:"Exeggutor"},{num:52,name:"Fearow"},{num:53,name:"Gloom"},{num:54,name:"Lickitung"},{num:55,name:"Marowak"},{num:56,name:"Nidorina"},{num:57,name:"Parasect"},{num:58,name:"Persian"},{num:59,name:"Primeape"},{num:60,name:"Rapidash"},{num:61,name:"Rhydon"},{num:62,name:"Seaking"},{num:63,name:"Tauros"},{num:64,name:"Weepinbell"}];
+    const baseCards = [{num:1,name:"Alakazam"},{num:2,name:"Blastoise",hasError:true},{num:3,name:"Chansey"},{num:4,name:"Charizard"},{num:5,name:"Clefairy"},{num:6,name:"Gyarados"},{num:7,name:"Hitmonchan"},{num:8,name:"Machamp",hasError:true},{num:9,name:"Magneton"},{num:10,name:"Mewtwo"},{num:11,name:"Nidoking"},{num:12,name:"Ninetales",hasError:true},{num:13,name:"Poliwrath"},{num:14,name:"Raichu"},{num:15,name:"Venusaur"},{num:16,name:"Zapdos"},{num:17,name:"Beedrill"},{num:18,name:"Dragonair"},{num:19,name:"Dugtrio"},{num:20,name:"Electabuzz"},{num:21,name:"Electrode"},{num:22,name:"Pidgeotto"},{num:23,name:"Arcanine"},{num:24,name:"Charmeleon"},{num:25,name:"Dewgong"},{num:26,name:"Dratini"},{num:27,name:"Farfetch'd"},{num:28,name:"Growlithe"},{num:29,name:"Haunter"},{num:30,name:"Ivysaur"},{num:31,name:"Jynx"},{num:32,name:"Kadabra"},{num:33,name:"Kakuna"},{num:34,name:"Machoke"},{num:35,name:"Magikarp"},{num:36,name:"Magmar"},{num:37,name:"Nidorino"},{num:38,name:"Poliwhirl"},{num:39,name:"Porygon"},{num:40,name:"Raticate"},{num:41,name:"Seel"},{num:42,name:"Wartortle"},{num:43,name:"Abra"},{num:44,name:"Bulbasaur"},{num:45,name:"Caterpie"},{num:46,name:"Charmander"},{num:47,name:"Diglett"},{num:48,name:"Doduo"},{num:49,name:"Drowzee"},{num:50,name:"Gastly"},{num:51,name:"Koffing"},{num:52,name:"Machop"},{num:53,name:"Magnemite"},{num:54,name:"Metapod"},{num:55,name:"Nidoran â™‚"},{num:56,name:"Onix"},{num:57,name:"Pidgey"},{num:58,name:"Pikachu",hasError:true},{num:59,name:"Poliwag"},{num:60,name:"Ponyta"},{num:61,name:"Rattata"},{num:62,name:"Sandshrew"},{num:63,name:"Squirtle"},{num:64,name:"Starmie"},{num:65,name:"Staryu"},{num:66,name:"Tangela"},{num:67,name:"Voltorb"},{num:68,name:"Vulpix"},{num:69,name:"Weedle"},{num:70,name:"Clefairy Doll"},{num:71,name:"Computer Search"},{num:72,name:"Devolution Spray"},{num:73,name:"Full Heal"},{num:74,name:"Item Finder"},{num:75,name:"Lass"},{num:76,name:"PokÃ©mon Breeder"},{num:77,name:"PokÃ©mon Trader"},{num:78,name:"Scoop Up"},{num:79,name:"Super Energy Removal"},{num:80,name:"Defender"},{num:81,name:"Energy Retrieval"},{num:82,name:"Grass Energy"},{num:83,name:"Healing Field"},{num:84,name:"Maintenance"},{num:85,name:"PlusPower"},{num:86,name:"PokÃ©mon Center"},{num:87,name:"PokÃ©mon Flute"},{num:88,name:"Pokedex"},{num:89,name:"Professor Oak"},{num:90,name:"Revive"},{num:91,name:"Super Potion"},{num:92,name:"Bill"},{num:93,name:"Energy Removal"},{num:94,name:"Gust of Wind"},{num:95,name:"Potion"},{num:96,name:"Switch"},{num:97,name:"Double Colorless Energy"},{num:98,name:"Fighting Energy"},{num:99,name:"Fire Energy"},{num:100,name:"Grass Energy"},{num:101,name:"Lightning Energy"},{num:102,name:"Psychic Energy"}]; 
+    const jungleCards = [{num:1,name:"Clefable"},{num:2,name:"Electrode"},{num:3,name:"Flareon"},{num:4,name:"Jolteon"},{num:5,name:"Kangaskhan"},{num:6,name:"Mr. Mime"},{num:7,name:"Nidoqueen"},{num:8,name:"Pidgeot"},{num:9,name:"Pinsir"},{num:10,name:"Scyther"},{num:11,name:"Snorlax"},{num:12,name:"Vaporeon"},{num:13,name:"Venomoth"},{num:14,name:"Victreebel"},{num:15,name:"Vileplume"},{num:16,name:"Wigglytuff"},{num:17,name:"Butterfree"},{num:18,name:"Dodrio"},{num:19,name:"Exeggutor"},{num:20,name:"Fearow"},{num:21,name:"Gloom"},{num:22,name:"Lickitung"},{num:23,name:"Marowak"},{num:24,name:"Nidorina"},{num:25,name:"Parasect"},{num:26,name:"Persian"},{num:27,name:"Primeape"},{num:28,name:"Rapidash"},{num:29,name:"Rhydon"},{num:30,name:"Seaking"},{num:31,name:"Tauros"},{num:32,name:"Weepinbell"},{num:33,name:"Bellsprout"},{num:34,name:"Cubone"},{num:35,name:"Eevee"},{num:36,name:"Exeggcute"},{num:37,name:"Goldeen"},{num:38,name:"Jigglypuff"},{num:39,name:"Mankey"},{num:40,name:"Meowth"},{num:41,name:"Nidoran â™€"},{num:42,name:"Oddish"},{num:43,name:"Paras"},{num:44,name:"Pikachu"},{num:45,name:"Rhyhorn"},{num:46,name:"Spearow"},{num:47,name:"Venonat"},{num:48,name:"Poke Ball"},{num:49,name:"Butterfree"},{num:50,name:"Dodrio"},{num:51,name:"Exeggutor"},{num:52,name:"Fearow"},{num:53,name:"Gloom"},{num:54,name:"Lickitung"},{num:55,name:"Marowak"},{num:56,name:"Nidorina"},{num:57,name:"Parasect"},{num:58,name:"Persian"},{num:59,name:"Primeape"},{num:60,name:"Rapidash"},{num:61,name:"Rhydon"},{num:62,name:"Seaking"},{num:63,name:"Tauros"},{num:64,name:"Weepinbell"}];
     const fossilCards = [{num:1,name:"Aerodactyl"},{num:2,name:"Articuno"},{num:3,name:"Ditto"},{num:4,name:"Dragonite"},{num:5,name:"Gengar"},{num:6,name:"Haunter"},{num:7,name:"Hitmonlee"},{num:8,name:"Hypno"},{num:9,name:"Kabutops"},{num:10,name:"Lapras"},{num:11,name:"Magneton"},{num:12,name:"Moltres"},{num:13,name:"Muk"},{num:14,name:"Raichu"},{num:15,name:"Zapdos"},{num:16,name:"Aerodactyl"},{num:17,name:"Articuno"},{num:18,name:"Ditto"},{num:19,name:"Dragonite"},{num:20,name:"Gengar"},{num:21,name:"Haunter"},{num:22,name:"Hitmonlee"},{num:23,name:"Hypno"},{num:24,name:"Kabutops"},{num:25,name:"Lapras"},{num:26,name:"Magneton"},{num:27,name:"Moltres"},{num:28,name:"Muk"},{num:29,name:"Raichu"},{num:30,name:"Zapdos"},{num:31,name:"Arbok"},{num:32,name:"Cloyster"},{num:33,name:"Gastly"},{num:34,name:"Golbat"},{num:35,name:"Golduck"},{num:36,name:"Golem"},{num:37,name:"Graveler"},{num:38,name:"Kingler"},{num:39,name:"Magmar"},{num:40,name:"Omastar"},{num:41,name:"Sandslash"},{num:42,name:"Seadra"},{num:43,name:"Slowbro"},{num:44,name:"Tentacruel"},{num:45,name:"Weezing"},{num:46,name:"Ekans"},{num:47,name:"Geodude"},{num:48,name:"Grimer"},{num:49,name:"Horsea"},{num:50,name:"Kabuto"},{num:51,name:"Krabby"},{num:52,name:"Omanyte"},{num:53,name:"Psyduck"},{num:54,name:"Shellder"},{num:55,name:"Slowpoke"},{num:56,name:"Tentacool"},{num:57,name:"Zubat"},{num:58,name:"Mr. Fuji"},{num:59,name:"Energy Search"},{num:60,name:"Gambler"},{num:61,name:"Recycle"},{num:62,name:"Mysterious Fossil"}];
     const rocketCards = [{num:1,name:"Dark Alakazam"},{num:2,name:"Dark Arbok"},{num:3,name:"Dark Blastoise"},{num:4,name:"Dark Charizard"},{num:5,name:"Dark Dragonite"},{num:6,name:"Dark Dugtrio"},{num:7,name:"Dark Golbat"},{num:8,name:"Dark Gyarados"},{num:9,name:"Dark Hypno"},{num:10,name:"Dark Machamp"},{num:11,name:"Dark Magneton"},{num:12,name:"Dark Slowbro"},{num:13,name:"Dark Vileplume"},{num:14,name:"Dark Weezing"},{num:15,name:"Here Comes Team Rocket!"},{num:16,name:"Rocket's Sneak Attack"},{num:17,name:"Rainbow Energy"},{num:18,name:"Dark Alakazam"},{num:19,name:"Dark Arbok"},{num:20,name:"Dark Blastoise"},{num:21,name:"Dark Charizard"},{num:22,name:"Dark Dragonite"},{num:23,name:"Dark Dugtrio"},{num:24,name:"Dark Golbat"},{num:25,name:"Dark Gyarados"},{num:26,name:"Dark Hypno"},{num:27,name:"Dark Machamp"},{num:28,name:"Dark Magneton"},{num:29,name:"Dark Slowbro"},{num:30,name:"Dark Vileplume"},{num:31,name:"Dark Weezing"},{num:32,name:"Dark Charmeleon"},{num:33,name:"Dark Dragonair"},{num:34,name:"Dark Electrode"},{num:35,name:"Dark Flareon"},{num:36,name:"Dark Gloom"},{num:37,name:"Dark Golduck"},{num:38,name:"Dark Jolteon"},{num:39,name:"Dark Magneton"},{num:40,name:"Dark Machoke"},{num:41,name:"Dark Muk"},{num:42,name:"Dark Persian"},{num:43,name:"Dark Primeape"},{num:44,name:"Dark Rapidash"},{num:45,name:"Dark Vaporeon"},{num:46,name:"Dark Wartortle"},{num:47,name:"Magikarp"},{num:48,name:"Porygon"},{num:49,name:"Abra"},{num:50,name:"Charmander"},{num:51,name:"Dark Raticate"},{num:52,name:"Diglett"},{num:53,name:"Dratini"},{num:54,name:"Drowzee"},{num:55,name:"Eevee"},{num:56,name:"Ekans"},{num:57,name:"Grimer"},{num:58,name:"Koffing"},{num:59,name:"Machop"},{num:60,name:"Magnemite"},{num:61,name:"Mankey"},{num:62,name:"Meowth"},{num:63,name:"Oddish"},{num:64,name:"Ponyta"},{num:65,name:"Psyduck"},{num:66,name:"Rattata"},{num:67,name:"Slowpoke"},{num:68,name:"Squirtle"},{num:69,name:"Voltorb"},{num:70,name:"Zubat"},{num:71,name:"Here Comes Team Rocket!"},{num:72,name:"Rocket's Sneak Attack"},{num:73,name:"The Boss's Way"},{num:74,name:"Challenge"},{num:75,name:"Digger"},{num:76,name:"Imposter Oak's Revenge"},{num:77,name:"Nightly Garbage Run"},{num:78,name:"Goop Gas Attack"},{num:79,name:"Sleep!"},{num:80,name:"Rainbow Energy"},{num:81,name:"Full Heal Energy"},{num:82,name:"Potion Energy"},{num:83,name:"Dark Raichu"}];
 	
     const sets = {
-        base: { name: "Base", color: "var(--base-c)", src: "base1", vars: ['unl', '1st', 'sdls', 'err'], cards: typeof baseCards !== 'undefined' ? baseCards : [] },
-        jungle: { name: "Jungle", color: "var(--jungle-c)", src: "base2", vars: ['unl', '1st', 'fp'], cards: typeof jungleCards !== 'undefined' ? jungleCards : [] },
-        fossil: { name: "Fossil", color: "var(--fossil-c)", src: "base3", vars: ['unl', '1st'], cards: typeof fossilCards !== 'undefined' ? fossilCards : [] },
-        rocket: { name: "Rocket", color: "var(--rocket-c)", src: "base5", vars: ['unl', '1st'], cards: typeof rocketCards !== 'undefined' ? rocketCards : [] }
+        base: { name: "Base", justtcgSetNames: ['Base Set', 'Base Set Unlimited'], color: "var(--base-c)", src: "base1", vars: ['unl', '1st', 'sdls', 'err'], cards: typeof baseCards !== 'undefined' ? baseCards : [] },
+        jungle: { name: "Jungle", justtcgSetNames: ['Jungle'], color: "var(--jungle-c)", src: "base2", vars: ['unl', '1st', 'fp'], cards: typeof jungleCards !== 'undefined' ? jungleCards : [] },
+        fossil: { name: "Fossil", justtcgSetNames: ['Fossil'], color: "var(--fossil-c)", src: "base3", vars: ['unl', '1st'], cards: typeof fossilCards !== 'undefined' ? fossilCards : [] },
+        rocket: { name: "Rocket", justtcgSetNames: ['Team Rocket', 'Rocket'], color: "var(--rocket-c)", src: "base5", vars: ['unl', '1st'], cards: typeof rocketCards !== 'undefined' ? rocketCards : [] }
     };
     
     let state = JSON.parse(localStorage.getItem('master_tracker')) || { settings: { scale: 1.2 } };
@@ -146,6 +468,7 @@
     let viewMode = 'grid';
     let hiddenSets = new Set();
     let currentModalKey = null;
+    let currentResolvedCardId = null;
 
     const initialScale = state.settings.scale || 1.2;
     const initialControlScale = Math.min(1, Math.max(0.6, initialScale));
@@ -241,13 +564,15 @@
     }
 
     function loadSavedJustTcgMap() {
+        const importedMap = EMBEDDED_JUSTTCG_MAPPING && typeof EMBEDDED_JUSTTCG_MAPPING === 'object' ? EMBEDDED_JUSTTCG_MAPPING : {};
         const saved = localStorage.getItem('justtcg_mapping');
-        if (!saved) {
+        if (!saved && Object.keys(importedMap).length === 0) {
             updateResumeMapButton({ totalKeys: 0, mappedKeys: 0, totalCards: 0, complete: false });
             return {};
         }
         try {
-            const map = JSON.parse(saved);
+            const parsedSaved = saved ? JSON.parse(saved) : {};
+            const map = { ...importedMap, ...parsedSaved };
             if (map && typeof map === 'object') {
                 window._JUSTTCG_GENERATED = map;
                 document.getElementById('downloadMapBtn').style.display = 'inline-block';
@@ -260,7 +585,7 @@
             console.warn('Could not parse saved JustTCG mapping:', err);
         }
         updateResumeMapButton({ totalKeys: 0, mappedKeys: 0, totalCards: 0, complete: false });
-        return {};
+        return importedMap;
     }
 
     function saveJustTcgMap(map) {
@@ -412,11 +737,387 @@
     async function copyJustTcgMap(){
         const map = window._JUSTTCG_GENERATED || {};
         try{ await navigator.clipboard.writeText(JSON.stringify(map, null, 2)); alert('Mapping copied to clipboard'); }
-        catch(e){ alert('Copy failed — please download the JSON instead.'); }
+        catch(e){ alert('Copy failed â€” please download the JSON instead.'); }
     }
 
     function getPriceLabel(value) {
         return value != null ? `$${Number(value).toFixed(2)}` : 'N/A';
+    }
+
+    const RAW_CONDITION_REQUESTS = [
+        { key: 'nm', queries: ['NM', 'Near Mint'] },
+        { key: 'lp', queries: ['LP', 'Lightly Played'] },
+        { key: 'mp', queries: ['MP', 'Moderately Played'] },
+        { key: 'hp', queries: ['HP', 'Heavily Played'] },
+        { key: 'dmg', queries: ['DMG', 'Damaged'] }
+    ];
+
+    const PSA_GRADE_REQUESTS = [
+        { key: '10', queries: ['PSA 10', '10'] },
+        { key: '9', queries: ['PSA 9', '9'] },
+        { key: '8', queries: ['PSA 8', '8'] },
+        { key: '7', queries: ['PSA 7', '7'] },
+        { key: '6', queries: ['PSA 6', '6'] }
+    ];
+
+    function normalizeTextForMatch(value) {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+    }
+
+    function getSetSearchTerms(sid) {
+        const setInfo = sets[sid] || {};
+        const preferred = Array.isArray(setInfo.justtcgSetNames) && setInfo.justtcgSetNames.length
+            ? setInfo.justtcgSetNames
+            : [setInfo.name || ''];
+        return preferred.map(normalizeTextForMatch).filter(Boolean);
+    }
+
+    function getPreferredSetNameForQuery(sid) {
+        const setInfo = sets[sid] || {};
+        if (Array.isArray(setInfo.justtcgSetNames) && setInfo.justtcgSetNames.length) {
+            return setInfo.justtcgSetNames[0];
+        }
+        return setInfo.name || '';
+    }
+
+    function isLikelyBundleId(cardId) {
+        if (!cardId) return false;
+        const t = String(cardId).toLowerCase();
+        return [
+            'booster-pack', 'tin', 'set-of', 'bundle', 'collection',
+            'deck', 'box', 'file-set', 'trainer-kit', 'battle-decks',
+            'promo', 'promotional', 'guidebook', 'unnumbered'
+        ].some(fragment => t.includes(fragment));
+    }
+
+    function isCardIdCompatibleWithSet(sid, cardId) {
+        if (!cardId) return false;
+        const t = String(cardId).toLowerCase();
+        if (sid === 'base' && (t.includes('base-set-2') || t.includes('baseset2'))) return false;
+
+        const conflictingBySet = {
+            base: ['jungle', 'fossil', 'team-rocket'],
+            jungle: ['base-set', 'base-set-2', 'fossil', 'team-rocket'],
+            fossil: ['base-set', 'base-set-2', 'jungle', 'team-rocket'],
+            rocket: ['base-set', 'base-set-2', 'jungle', 'fossil']
+        };
+
+        const conflicts = conflictingBySet[sid] || [];
+        if (conflicts.some(fragment => t.includes(fragment))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function getEditionPreference(key, sid) {
+        const entry = state[key] || {};
+        if (sid === 'base') {
+            if (entry.sdls === true) return 'shadowless';
+            if (entry['1st'] === true) return '1st';
+            return 'unlimited';
+        }
+        if (entry['1st'] === true) return '1st';
+        return 'unlimited';
+    }
+
+    function scoreCardMatch(item, targetName, targetNumber, targetSetTerms, sid, editionPreference = null) {
+        if (!item) return -100;
+        const itemName = normalizeTextForMatch(item.name);
+        const itemNumber = String(item.number || '');
+        const itemSetName = normalizeTextForMatch(item.set_name || item.set?.name || item.set || '');
+        const itemId = String(item.id || '').toLowerCase();
+
+        let score = 0;
+        if (itemNumber === targetNumber) score += 10;
+        if (!itemNumber) score -= 2;
+        if (itemName === targetName) score += 4;
+        if (itemName.includes(targetName) || targetName.includes(itemName)) score += 3;
+
+        const hasSetTermMatch = Array.isArray(targetSetTerms) && targetSetTerms.some(term => term && (itemSetName.includes(term) || term.includes(itemSetName)));
+        if (hasSetTermMatch) {
+            score += 5;
+        } else if (itemSetName) {
+            score -= 3;
+        }
+
+        // Explicitly avoid resolving Base cards to Base Set 2 records.
+        if (sid === 'base' && (itemSetName.includes('baseset2') || itemId.includes('base-set-2'))) {
+            score -= 12;
+        }
+        // Avoid resolving original Team Rocket cards to Team Rocket Returns
+        if (sid === 'rocket' && (itemSetName.includes('returns') || itemId.includes('rocket-returns') || itemId.includes('team-rocket-returns'))) {
+            score -= 12;
+        }
+        // Heavily penalize Japanese cards — we only want English
+        if (itemId.includes('japan') || itemId.includes('-japan-') || itemSetName.includes('japan')) score -= 20;
+
+        if (itemSetName.includes('promo') || itemSetName.includes('unnumbered')) score -= 4;
+        if (itemId.includes('promo') || itemId.includes('promotional') || itemId.includes('guidebook')) score -= 4;
+        if (isLikelyBundleId(item.id)) score -= 6;
+
+        const { hasShadowless, hasFirstEdition } = getEditionFlagsFromItem(item);
+        if (editionPreference === 'shadowless') {
+            if (hasShadowless) score += 6;
+            else score -= 4;
+        } else if (editionPreference === '1st') {
+            if (hasFirstEdition) score += 6;
+            else score -= 4;
+        } else if (editionPreference === 'unlimited') {
+            if (!hasShadowless && !hasFirstEdition) score += 3;
+            else score -= 6;
+        }
+
+        return score;
+    }
+
+    function normalizeConditionKey(value) {
+        const t = String(value || '').trim().toLowerCase();
+        if (!t) return null;
+        if (t === 'nm' || t.includes('near mint')) return 'nm';
+        if (t === 'lp' || t.includes('lightly played')) return 'lp';
+        if (t === 'mp' || t.includes('moderately played') || t.includes('moderate played')) return 'mp';
+        if (t === 'hp' || t.includes('heavily played')) return 'hp';
+        if (t === 'dmg' || t.includes('damaged')) return 'dmg';
+        return null;
+    }
+
+    function normalizeGrade(value) {
+        if (value == null) return null;
+        const digits = String(value).match(/\d+/);
+        if (!digits) return null;
+        const parsed = parseInt(digits[0], 10);
+        return Number.isFinite(parsed) ? String(parsed) : null;
+    }
+
+    function normalizeGradingCompany(value) {
+        return String(value || '').trim().toLowerCase();
+    }
+
+    function mergeNonNullPrices(base, incoming) {
+        const output = { ...base };
+        Object.entries(incoming || {}).forEach(([k, v]) => {
+            if (typeof v === 'number' && Number.isFinite(v)) {
+                output[k] = v;
+            }
+        });
+        return output;
+    }
+
+    function getDefaultPriceState() {
+        return { raw: { nm: null, lp: null, mp: null, hp: null, dmg: null }, psa: { 6: null, 7: null, 8: null, 9: null, 10: null } };
+    }
+
+    function getVersionLabelFromItem(item, sid) {
+        const hay = `${String(item?.id || '').toLowerCase()} ${String(item?.set_name || item?.set?.name || item?.set || '').toLowerCase()} ${String(item?.printing || '').toLowerCase()}`;
+        const { hasShadowless, hasFirstEdition } = getEditionFlagsFromItem(item);
+        if (sid === 'base') {
+            if (hasFirstEdition) return '1st Edition';
+            if (hasShadowless) return 'Shadowless';
+            return 'Unlimited';
+        }
+        if (hasFirstEdition) return '1st Edition';
+        return 'Unlimited';
+    }
+
+    function getDefaultVersionLabelForKey(key, sid) {
+        const edition = getEditionPreference(key, sid);
+        if (edition === 'shadowless') return 'Shadowless';
+        if (edition === '1st') return '1st Edition';
+        return 'Unlimited';
+    }
+
+    function getExpectedVersionLabelsForSet(sid) {
+        const setVars = Array.isArray(sets[sid]?.vars) ? sets[sid].vars : [];
+        const labels = [];
+        if (setVars.includes('unl')) labels.push('Unlimited');
+        if (setVars.includes('sdls')) labels.push('Shadowless');
+        if (setVars.includes('1st')) labels.push('1st Edition');
+        if (!labels.length) labels.push('Unlimited');
+        return labels;
+    }
+
+    function getEditionPreferenceForVersionLabel(versionLabel) {
+        const t = String(versionLabel || '').toLowerCase();
+        if (t.includes('shadowless')) return 'shadowless';
+        if (t.includes('1st') || t.includes('first')) return '1st';
+        return 'unlimited';
+    }
+
+    function getEditionFlagsFromItem(item) {
+        const itemSet = String(item?.set_name || item?.set?.name || item?.set || '').toLowerCase();
+        const itemId = String(item?.id || '').toLowerCase();
+        const itemName = String(item?.name || '').toLowerCase();
+        const itemPrinting = String(item?.printing || '').toLowerCase();
+        const variantPrinting = Array.isArray(item?.variants)
+            ? item.variants.map(v => String(v?.printing || v?.name || '').toLowerCase()).join(' ')
+            : '';
+        const combined = `${itemId} ${itemSet} ${itemName} ${itemPrinting} ${variantPrinting}`;
+        const hasShadowless = combined.includes('shadowless');
+        const hasFirstEdition = /(^|[^a-z0-9])1st([^a-z0-9]|$)/.test(combined)
+            || combined.includes('first-edition')
+            || combined.includes('first edition')
+            || combined.includes('firstedition')
+            || combined.includes('1stedition')
+            || combined.includes('edition1');
+        return { hasShadowless, hasFirstEdition };
+    }
+
+    function isItemCompatibleWithEdition(item, editionPreference) {
+        const { hasShadowless, hasFirstEdition } = getEditionFlagsFromItem(item);
+        if (editionPreference === 'shadowless') return hasShadowless && !hasFirstEdition;
+        if (editionPreference === '1st') return hasFirstEdition;
+        return !hasShadowless && !hasFirstEdition;
+    }
+
+    function getEditionSearchPhrase(versionLabel) {
+        const edition = getEditionPreferenceForVersionLabel(versionLabel);
+        if (edition === 'shadowless') return 'shadowless';
+        if (edition === '1st') return '1st edition';
+        return 'unlimited';
+    }
+
+    function applySelectedVersionToCardState(key) {
+        const cardState = state[key] || {};
+        const versions = cardState.versionBuckets || {};
+        const selected = cardState.selectedVersionLabel;
+        if (!selected || !versions[selected]) return;
+        cardState.prices = JSON.parse(JSON.stringify(versions[selected].prices || getDefaultPriceState()));
+        cardState.justtcgCardId = versions[selected].cardId || null;
+    }
+
+    function renderVersionPills(key) {
+        const pillsEl = document.getElementById('versionPills');
+        if (!pillsEl) return;
+        const cardState = state[key] || {};
+        const versions = cardState.versionBuckets || {};
+        const selected = cardState.selectedVersionLabel;
+        const [sid] = key.split('-');
+        const preferredOrder = getExpectedVersionLabelsForSet(sid);
+        const labels = [
+            ...preferredOrder.filter(label => Object.prototype.hasOwnProperty.call(versions, label)),
+            ...Object.keys(versions).filter(label => !preferredOrder.includes(label))
+        ];
+        if (!labels.length) {
+            pillsEl.innerHTML = '';
+            return;
+        }
+
+        pillsEl.innerHTML = labels.map(label => {
+            const active = label === selected;
+            const bg = active ? '#4da3ff' : '#111';
+            const color = active ? '#fff' : '#ddd';
+            const border = active ? '#4da3ff' : '#555';
+            return `<button onclick="selectVersion('${key}','${label.replace(/'/g, "\\'")}')" style="padding:6px 10px; border-radius:999px; border:1px solid ${border}; background:${bg}; color:${color}; cursor:pointer;">${label}</button>`;
+        }).join('');
+    }
+
+    function selectVersion(key, label) {
+        state[key] = state[key] || {};
+        state[key].selectedVersionLabel = label;
+        applySelectedVersionToCardState(key);
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        showVariantsModal(key);
+    }
+
+    function buildModalPriceHtml(priceState, sourceUrl) {
+        const p = priceState || getDefaultPriceState();
+        return `
+            <div><b>Raw NM:</b> ${getPriceLabel(p.raw?.nm)}</div><div><b>PSA 10:</b> ${getPriceLabel(p.psa?.['10'])}</div>
+            <div><b>Raw LP:</b> ${getPriceLabel(p.raw?.lp)}</div><div><b>PSA 9:</b> ${getPriceLabel(p.psa?.['9'])}</div>
+            <div><b>Raw MP:</b> ${getPriceLabel(p.raw?.mp)}</div><div><b>PSA 8:</b> ${getPriceLabel(p.psa?.['8'])}</div>
+            <div><b>Raw HP:</b> ${getPriceLabel(p.raw?.hp)}</div><div><b>PSA 7:</b> ${getPriceLabel(p.psa?.['7'])}</div>
+            <div><b>Raw DMG:</b> ${getPriceLabel(p.raw?.dmg)}</div><div><b>PSA 6:</b> ${getPriceLabel(p.psa?.['6'])}</div>
+            <div style="margin-top:16px; text-align:right; font-size:0.85rem;">
+                ${sourceUrl ? `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" style="color:#4da3ff;">Open JustTCG source</a>` : ''}
+            </div>
+        `;
+    }
+
+    function setModalLoading(isLoading, message = 'Loading prices...') {
+        const row = document.getElementById('modalLoading');
+        const text = document.getElementById('modalLoadingText');
+        const refreshBtn = document.getElementById('refreshPricesBtn');
+        if (text) text.textContent = message;
+        if (row) row.style.display = isLoading ? 'flex' : 'none';
+        if (refreshBtn) refreshBtn.disabled = !!isLoading;
+    }
+
+    function pickBestNumericPrice(source) {
+        if (!source || typeof source !== 'object') return null;
+        if (typeof source.price === 'number' && Number.isFinite(source.price)) return source.price;
+
+        const market = source.market || {};
+        if (typeof market.average === 'number' && Number.isFinite(market.average)) return market.average;
+        if (typeof market.low === 'number' && Number.isFinite(market.low)) return market.low;
+        if (typeof market.high === 'number' && Number.isFinite(market.high)) return market.high;
+
+        const prices = source.prices || {};
+        for (const v of Object.values(prices)) {
+            if (typeof v === 'number' && Number.isFinite(v)) return v;
+        }
+
+        return null;
+    }
+
+    function extractPriceFromCards(cards) {
+        if (!Array.isArray(cards)) return null;
+
+        for (const cardItem of cards) {
+            if (Array.isArray(cardItem.variants)) {
+                for (const variant of cardItem.variants) {
+                    const value = pickBestNumericPrice(variant);
+                    if (value != null) return value;
+                }
+            }
+            const fallback = pickBestNumericPrice(cardItem);
+            if (fallback != null) return fallback;
+        }
+
+        return null;
+    }
+
+    function extractPriceFromCardsFiltered(cards, filter = {}) {
+        if (!Array.isArray(cards)) return null;
+        const wantedCondition = filter.conditionKey || null;
+        const wantedGrade = filter.grade || null;
+        const wantedGrading = normalizeGradingCompany(filter.grading || '');
+
+        const candidates = [];
+
+        cards.forEach(cardItem => {
+            candidates.push({
+                source: cardItem,
+                conditionKey: normalizeConditionKey(cardItem?.condition),
+                grade: normalizeGrade(cardItem?.grade),
+                grading: normalizeGradingCompany(cardItem?.grading || cardItem?.gradingCompany)
+            });
+
+            if (Array.isArray(cardItem?.variants)) {
+                cardItem.variants.forEach(variant => {
+                    candidates.push({
+                        source: variant,
+                        conditionKey: normalizeConditionKey(variant?.condition),
+                        grade: normalizeGrade(variant?.grade),
+                        grading: normalizeGradingCompany(variant?.grading || variant?.gradingCompany)
+                    });
+                });
+            }
+        });
+
+        for (const candidate of candidates) {
+            if (wantedCondition && candidate.conditionKey !== wantedCondition) continue;
+            if (wantedGrade && candidate.grade !== wantedGrade) continue;
+            if (wantedGrading) {
+                if (!candidate.grading || candidate.grading !== wantedGrading) continue;
+            }
+            const value = pickBestNumericPrice(candidate.source);
+            if (value != null) return value;
+        }
+
+        return null;
     }
 
     function displayPriceRows(card, key) {
@@ -448,26 +1149,109 @@
         return rows.join('');
     }
 
+    function extractRawPricesFromCards(cards) {
+        const raw = { nm: null, lp: null, mp: null, hp: null, dmg: null };
+        if (!Array.isArray(cards)) return raw;
+
+        cards.forEach(cardItem => {
+            const cardCondition = normalizeConditionKey(cardItem?.condition);
+            const cardPrice = pickBestNumericPrice(cardItem);
+            if (cardCondition && cardPrice != null && raw[cardCondition] == null) {
+                raw[cardCondition] = cardPrice;
+            }
+
+            if (Array.isArray(cardItem?.variants)) {
+                cardItem.variants.forEach(variant => {
+                    const c = normalizeConditionKey(variant?.condition);
+                    const price = pickBestNumericPrice(variant);
+                    if (c && price != null && raw[c] == null) {
+                        raw[c] = price;
+                    }
+                });
+            }
+        });
+
+        return raw;
+    }
+
+    function getJustTcgCardIdForKey(key, card) {
+        const [sid] = key.split('-');
+        const entry = state[key] || {};
+        const savedMap = window._JUSTTCG_GENERATED || EMBEDDED_JUSTTCG_MAPPING || {};
+        const mappedId = entry.justtcgCardId || savedMap[key] || JUSTTCG_IDS[key];
+        if (mappedId && !isLikelyBundleId(mappedId) && isCardIdCompatibleWithSet(sid, mappedId)) return mappedId;
+        if (card && card.justtcgCardId && isCardIdCompatibleWithSet(sid, card.justtcgCardId)) return card.justtcgCardId;
+        return null;
+    }
+
+    function getJustTcgSourceUrl(cardId) {
+        if (!cardId) return null;
+        // Open the secure local viewer which will attach the saved API key in a header
+        return `justtcg_viewer.html?cardId=${encodeURIComponent(cardId)}`;
+    }
+
     function openModal(key) {
         currentModalKey = key;
         const [sid, num] = key.split('-');
         const card = sets[sid].cards.find(c => c.num == num);
-        const d = state[key] || {};
-        const p = d.prices || { raw: { nm:0, lp:0, mp:0, hp:0 }, psa: { 8:0, 9:0, 10:0 } };
-        document.getElementById('modalLeft').innerHTML = `<img src="https://images.pokemontcg.io/${sets[sid].src}/${card.num}.png" style="width:200px"><h4>${card.name}</h4>`;
-        document.getElementById('priceData').innerHTML = `
-            <div><b>Raw NM:</b> $${p.raw.nm}</div><div><b>PSA 10:</b> $${p.psa['10'] || 0}</div>
-            <div><b>Raw LP:</b> $${p.raw.lp}</div><div><b>PSA 9:</b> $${p.psa['9'] || 0}</div>
-            <div><b>Raw MP:</b> $${p.raw.mp}</div><div><b>PSA 8:</b> $${p.psa['8'] || 0}</div>
+        state[key] = state[key] || {};
+        const d = state[key];
+        
+        // Populate from embedded mapping if not already in state
+        if (!d.justtcgCardId) {
+            const savedMap = window._JUSTTCG_GENERATED || EMBEDDED_JUSTTCG_MAPPING || {};
+            const fallbackId = savedMap[key] || JUSTTCG_IDS[key];
+            if (fallbackId) {
+                d.justtcgCardId = fallbackId;
+            }
+        }
+        
+        if (d.versionBuckets && Object.keys(d.versionBuckets).length) {
+            if (!d.selectedVersionLabel || !d.versionBuckets[d.selectedVersionLabel]) {
+                const preferred = getDefaultVersionLabelForKey(key, sid);
+                d.selectedVersionLabel = d.versionBuckets[preferred]
+                    ? preferred
+                    : Object.keys(d.versionBuckets)[0];
+            }
+            applySelectedVersionToCardState(key);
+        }
+        const selectedBucket = d.versionBuckets && d.selectedVersionLabel ? d.versionBuckets[d.selectedVersionLabel] : null;
+        
+        // Get card ID directly from state or embedded mapping
+        let resolvedId = null;
+        if (d.selectedVersionLabel && selectedBucket?.cardId) {
+            resolvedId = selectedBucket.cardId;
+        } else {
+            // Try state first, then embedded mapping, then JUSTTCG_IDS
+            resolvedId = d.justtcgCardId || (EMBEDDED_JUSTTCG_MAPPING && EMBEDDED_JUSTTCG_MAPPING[key]) || (JUSTTCG_IDS && JUSTTCG_IDS[key]) || null;
+            // Save to state so refreshCardPrices can find it
+            if (resolvedId && !d.justtcgCardId) {
+                d.justtcgCardId = resolvedId;
+            }
+        }
+        currentResolvedCardId = resolvedId;
+        
+        const p = selectedBucket?.prices || d.prices || getDefaultPriceState();
+        const sourceUrl = getJustTcgSourceUrl(currentResolvedCardId);
+        renderVersionPills(key);
+        
+        // Update the card ID display
+        document.getElementById('currentCardId').textContent = currentResolvedCardId || 'Not resolved yet';
+        
+        document.getElementById('modalLeft').innerHTML = `
+            <img src="https://images.pokemontcg.io/${sets[sid].src}/${card.num}.png" style="width:200px">
+            <h4>${card.name}</h4>
+            <div style="margin-top:8px; font-size:0.85rem; color:#ccc;">Card ID: ${currentResolvedCardId || 'Not resolved yet'}</div>
         `;
+        document.getElementById('priceData').innerHTML = buildModalPriceHtml(p, sourceUrl);
         document.getElementById('valueModal').style.display = 'flex';
     }
 
     const JUSTTCG_IDS = {
         'base-1': 'pokemon-base-set-shadowless-pokemon-base-set-shadowless-unlimited-edition-booster-pack',
-        'base-2': 'pokemon-japan-sv2a-pokemon-card-151-pokemon-card-151-card-file-set-venusaur-charizard-blastoise',
-        'base-3': 'pokemon-pokemon-go-pokemon-go-poke-ball-tin-set-of-3',
-        'base-4': 'pokemon-japan-sv2a-pokemon-card-151-pokemon-card-151-card-file-set-venusaur-charizard-blastoise',
+        'base-2': null,
+        'base-3': null,
+        'base-4': null,
         'base-22': 'pokemon-base-set-shadowless-pokemon-base-set-shadowless-unlimited-edition-booster-pack',
         'base-23': 'pokemon-base-set-shadowless-pokemon-base-set-shadowless-unlimited-edition-booster-pack'
     };
@@ -480,23 +1264,28 @@
         }
 
         const [sid] = key.split('-');
-        const savedMap = window._JUSTTCG_GENERATED || {};
-        const cardId = state[key]?.justtcgCardId || savedMap[key] || JUSTTCG_IDS[key];
+        const savedMap = window._JUSTTCG_GENERATED || EMBEDDED_JUSTTCG_MAPPING || {};
+        const cardId = getJustTcgCardIdForKey(key, card);
         const escapedName = card.name.replace(/"/g, '\\"');
-        const escapedSetName = sets[sid].name.replace(/"/g, '\\"');
+        const preferredSetName = getPreferredSetNameForQuery(sid);
+        const escapedSetName = preferredSetName.replace(/"/g, '\\"');
         let url;
-
-        if (cardId) {
-            url = `https://api.justtcg.com/v1/cards?cardId=${encodeURIComponent(cardId)}`;
-        } else {
+        const preferSearch = !cardId || isLikelyBundleId(cardId);
+        if (preferSearch) {
             const query = `name:"${escapedName}" set_name:"${escapedSetName}" number:"${card.num}" game:"Pokemon"`;
-            url = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(query)}&limit=1`;
+            url = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(query)}&limit=10`;
+        } else {
+            url = `https://api.justtcg.com/v1/cards?cardId=${encodeURIComponent(cardId)}`;
         }
+
+        const headers = {
+            'x-api-key': apiKey,
+            'Accept': 'application/json'
+        };
 
         const res = await fetch(url, {
             headers: {
-                'x-api-key': apiKey,
-                'Accept': 'application/json'
+                ...headers
             }
         });
 
@@ -506,18 +1295,277 @@
         }
 
         const json = await res.json();
-        const cards = Array.isArray(json.data) ? json.data : [];
+        let cards = Array.isArray(json.data) ? json.data : [];
+
+        const normalizedTargetName = normalizeTextForMatch(card.name);
+        const targetNumber = String(card.num);
+        const normalizedTargetSetTerms = getSetSearchTerms(sid);
+        const editionPreference = getEditionPreference(key, sid);
+        const hasLikelyMatch = cards.some(item => scoreCardMatch(item, normalizedTargetName, targetNumber, normalizedTargetSetTerms, sid, editionPreference) >= 6);
+
+        if (!hasLikelyMatch) {
+            const searchQueries = [
+                `name:"${escapedName}" set_name:"${escapedSetName}" number:"${card.num}" game:"Pokemon"`,
+                `name:"${escapedName}" number:"${card.num}" game:"Pokemon"`,
+                `name:"${escapedName}" game:"Pokemon"`
+            ];
+
+            for (const query of searchQueries) {
+                const searchUrl = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(query)}&limit=20`;
+                const searchRes = await fetch(searchUrl, { headers });
+                if (!searchRes.ok) continue;
+                const searchJson = await searchRes.json();
+                const searchCards = Array.isArray(searchJson.data) ? searchJson.data : [];
+                if (searchCards.length) {
+                    cards = searchCards;
+                    const bestFallbackScore = cards
+                        .map(item => scoreCardMatch(item, normalizedTargetName, targetNumber, normalizedTargetSetTerms, sid, editionPreference))
+                        .sort((a, b) => b - a)[0] ?? -100;
+                    if (bestFallbackScore >= 10) break;
+                }
+            }
+        }
+
         if (!cards.length) {
             return null;
         }
 
-        if (!cardId && cards[0].id) {
+        // Hard-filter Japanese cards — we only want English cards
+        const englishCards = cards.filter(item => {
+            const id = String(item?.id || '').toLowerCase();
+            const setName = String(item?.set_name || item?.set?.name || item?.set || '').toLowerCase();
+            return !id.includes('japan') && !setName.includes('japan');
+        });
+        if (englishCards.length > 0) cards = englishCards;
+
+        const bestCardWithScore = cards
+            .map(item => ({ item, score: scoreCardMatch(item, normalizedTargetName, targetNumber, normalizedTargetSetTerms, sid, editionPreference) }))
+            .sort((a, b) => b.score - a.score)[0];
+        const bestCard = bestCardWithScore?.item || cards[0];
+        const bestScore = bestCardWithScore?.score ?? -100;
+        const exactNumberMatch = String(bestCard?.number || '') === targetNumber;
+
+        if (bestCard?.id && exactNumberMatch && bestScore >= 10 && !isLikelyBundleId(bestCard.id)) {
             state[key] = state[key] || {};
-            state[key].justtcgCardId = cards[0].id;
+            state[key].justtcgCardId = bestCard.id;
             localStorage.setItem('master_tracker', JSON.stringify(state));
         }
 
-        return cards;
+        return {
+            cards,
+            bestCard,
+            bestScore,
+            exactNumberMatch
+        };
+    }
+
+    async function fetchRawConditionLadder(cardId, card, sid, editionPreferenceOverride = null) {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            return { nm: null, lp: null, mp: null, hp: null, dmg: null };
+        }
+
+        const headers = { 'x-api-key': apiKey, 'Accept': 'application/json' };
+        const raw = { nm: null, lp: null, mp: null, hp: null, dmg: null };
+
+        const responses = await Promise.all(RAW_CONDITION_REQUESTS.map(async ({ key, queries }) => {
+            for (const query of queries) {
+                if (cardId) {
+                    const url = `https://api.justtcg.com/v1/cards?cardId=${encodeURIComponent(cardId)}&condition=${encodeURIComponent(query)}`;
+                    try {
+                        const res = await fetch(url, { headers });
+                        if (res.ok) {
+                            const json = await res.json();
+                            const cards = Array.isArray(json.data) ? json.data : [];
+                            const value = extractPriceFromCardsFiltered(cards, { conditionKey: key });
+                            if (value != null) {
+                                return { key, cards };
+                            }
+                        }
+                    } catch (err) {
+                        // Try next condition format.
+                    }
+                }
+
+                const escapedName = card.name.replace(/"/g, '\\"');
+                const escapedSetName = getPreferredSetNameForQuery(sid).replace(/"/g, '\\"');
+                const editionPreference = editionPreferenceOverride || getEditionPreference(currentModalKey || `${sid}-${card.num}`, sid);
+                const editionPhrase = getEditionSearchPhrase(editionPreference === '1st' ? '1st Edition' : editionPreference === 'shadowless' ? 'Shadowless' : 'Unlimited');
+                const searchQuery = `name:"${escapedName}" set_name:"${escapedSetName}" number:"${card.num}" game:"Pokemon" ${editionPhrase}`;
+                const searchUrl = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(searchQuery)}&condition=${encodeURIComponent(query)}&limit=10`;
+                try {
+                    const res = await fetch(searchUrl, { headers });
+                    if (!res.ok) continue;
+                    const json = await res.json();
+                    const cards = Array.isArray(json.data) ? json.data : [];
+                    const setTerms = getSetSearchTerms(sid);
+                    const ranked = cards
+                        .map(item => ({ item, score: scoreCardMatch(item, normalizeTextForMatch(card.name), String(card.num), setTerms, sid, editionPreference) }))
+                        .sort((a, b) => b.score - a.score)
+                        .map(x => x.item);
+                    const value = extractPriceFromCardsFiltered(ranked, { conditionKey: key });
+                    if (value != null) {
+                        return { key, cards: ranked };
+                    }
+                } catch (err) {
+                    // Try next condition format.
+                }
+            }
+            return { key, cards: [] };
+        }));
+
+        responses.forEach(({ key, cards }) => {
+            raw[key] = extractPriceFromCardsFiltered(cards, { conditionKey: key });
+        });
+
+        console.log('fetchRawConditionLadder result for', cardId, ':', raw);
+        return raw;
+    }
+
+    async function fetchPsaLadder(cardId, card, sid, editionPreferenceOverride = null) {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            return { '6': null, '7': null, '8': null, '9': null, '10': null };
+        }
+
+        const headers = { 'x-api-key': apiKey, 'Accept': 'application/json' };
+        const psa = { '6': null, '7': null, '8': null, '9': null, '10': null };
+
+        const responses = await Promise.all(PSA_GRADE_REQUESTS.map(async ({ key, queries }) => {
+            for (const query of queries) {
+                if (cardId) {
+                    const url = `https://api.justtcg.com/v1/cards?cardId=${encodeURIComponent(cardId)}&grading=PSA&grade=${encodeURIComponent(query)}`;
+                    try {
+                        const res = await fetch(url, { headers });
+                        if (res.ok) {
+                            const json = await res.json();
+                            const cards = Array.isArray(json.data) ? json.data : [];
+                            const value = extractPriceFromCardsFiltered(cards, { grading: 'psa', grade: key });
+                            if (value != null) {
+                                return { key, cards };
+                            }
+                        }
+                    } catch (err) {
+                        // Try fallback search.
+                    }
+                }
+
+                const escapedName = card.name.replace(/"/g, '\\"');
+                const escapedSetName = getPreferredSetNameForQuery(sid).replace(/"/g, '\\"');
+                const editionPreference = editionPreferenceOverride || getEditionPreference(currentModalKey || `${sid}-${card.num}`, sid);
+                const editionPhrase = getEditionSearchPhrase(editionPreference === '1st' ? '1st Edition' : editionPreference === 'shadowless' ? 'Shadowless' : 'Unlimited');
+                const searchQuery = `name:"${escapedName}" set_name:"${escapedSetName}" number:"${card.num}" game:"Pokemon" ${editionPhrase}`;
+                const searchUrl = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(searchQuery)}&grading=PSA&grade=${encodeURIComponent(query)}&limit=10`;
+                try {
+                    const res = await fetch(searchUrl, { headers });
+                    if (!res.ok) continue;
+                    const json = await res.json();
+                    const cards = Array.isArray(json.data) ? json.data : [];
+                    const setTerms = getSetSearchTerms(sid);
+                    const ranked = cards
+                        .map(item => ({ item, score: scoreCardMatch(item, normalizeTextForMatch(card.name), String(card.num), setTerms, sid, editionPreference) }))
+                        .sort((a, b) => b.score - a.score)
+                        .map(x => x.item);
+                    const value = extractPriceFromCardsFiltered(ranked, { grading: 'psa', grade: key });
+                    if (value != null) {
+                        return { key, cards: ranked };
+                    }
+                } catch (err) {
+                    // Try next grade format.
+                }
+            }
+            return { key, cards: [] };
+        }));
+
+        responses.forEach(({ key, cards }) => {
+            psa[key] = extractPriceFromCardsFiltered(cards, { grading: 'psa', grade: key });
+        });
+
+        console.log('fetchPsaLadder result for', cardId, ':', psa);
+        return psa;
+    }
+
+    async function resolveBestCardForVersion(card, sid, versionLabel, seedCards = []) {
+        const apiKey = getApiKey();
+        if (!apiKey) return null;
+        const headers = { 'x-api-key': apiKey, 'Accept': 'application/json' };
+        const escapedName = card.name.replace(/"/g, '\\"');
+        const escapedSetName = getPreferredSetNameForQuery(sid).replace(/"/g, '\\"');
+        const editionPreference = getEditionPreferenceForVersionLabel(versionLabel);
+        const editionPhrase = getEditionSearchPhrase(versionLabel);
+        const strictQuery = `name:"${escapedName}" set_name:"${escapedSetName}" number:"${card.num}" game:"Pokemon" ${editionPhrase}`;
+        const broadQuery = `name:"${escapedName}" set_name:"${escapedSetName}" number:"${card.num}" game:"Pokemon"`;
+        const looseQuery = `name:"${escapedName}" number:"${card.num}" game:"Pokemon" ${editionPhrase}`;
+        const strictUrl = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(strictQuery)}&limit=30`;
+        const broadUrl = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(broadQuery)}&limit=40`;
+        const looseUrl = `https://api.justtcg.com/v1/cards?q=${encodeURIComponent(looseQuery)}&limit=40`;
+
+        const seededMatches = Array.isArray(seedCards)
+            ? seedCards.filter(item => isItemCompatibleWithEdition(item, editionPreference))
+            : [];
+
+        let cards = [...seededMatches];
+        for (const url of [strictUrl, broadUrl, looseUrl]) {
+            try {
+                const res = await fetch(url, { headers });
+                if (!res.ok) continue;
+                const json = await res.json();
+                const fetched = Array.isArray(json.data) ? json.data : [];
+                cards = cards.concat(fetched);
+            } catch (err) {
+                // Keep accumulated cards.
+            }
+        }
+
+        const dedup = [];
+        const seen = new Set();
+        cards.forEach(item => {
+            const id = item?.id;
+            if (!id || seen.has(id)) return;
+            seen.add(id);
+            dedup.push(item);
+        });
+
+        const setTerms = getSetSearchTerms(sid);
+        const ranked = dedup
+            .filter(item => {
+                if (!item?.id || isLikelyBundleId(item.id)) return false;
+                if (!isItemCompatibleWithEdition(item, editionPreference)) return false;
+                // Hard-exclude Japanese cards — English only
+                const id = String(item.id).toLowerCase();
+                const sn = String(item.set_name || item.set?.name || item.set || '').toLowerCase();
+                if (id.includes('japan') || sn.includes('japan')) return false;
+                return true;
+            })
+            .map(item => ({ item, score: scoreCardMatch(item, normalizeTextForMatch(card.name), String(card.num), setTerms, sid, editionPreference) }))
+            .sort((a, b) => b.score - a.score);
+
+        const best = ranked[0];
+        if (!best || best.score < 6) {
+            // Fallback: check embedded mapping before giving up
+            const currentKey = `${sid}-${card.num}`;
+            const savedMap = window._JUSTTCG_GENERATED || EMBEDDED_JUSTTCG_MAPPING || {};
+            const fallbackId = JUSTTCG_IDS?.[currentKey] || savedMap[currentKey];
+            if (fallbackId) {
+                // Fetch the mapped card to get full details
+                try {
+                    const res = await fetch(`https://api.justtcg.com/v1/cards?q=id:"${fallbackId}"`, { headers });
+                    if (res.ok) {
+                        const json = await res.json();
+                        const found = Array.isArray(json.data) && json.data[0];
+                        if (found && isItemCompatibleWithEdition(found, editionPreference)) {
+                            return found;
+                        }
+                    }
+                } catch (err) {
+                    // If fetch fails, still return the ID as-is
+                }
+                // Return a minimal object with just the ID so pricing can fetch it
+                return { id: fallbackId, name: card.name, number: card.num, set_name: getPreferredSetNameForQuery(sid) };
+            }
+            return null;
+        }
+        return best.item;
     }
 
     function extractVariantsFromCards(cards) {
@@ -558,47 +1606,247 @@
         return Array.from(variantMap.values());
     }
 
+    async function resolveCardId() {
+        if (!currentModalKey) return;
+
+        const [sid, num] = currentModalKey.split('-');
+        const card = sets[sid].cards.find(c => c.num == num);
+        setModalLoading(true, 'Resolving card ID...');
+
+        try {
+            const resolved = await resolveJustTcgCardData(card, currentModalKey);
+            if (!resolved || !resolved.bestCard?.id) {
+                alert('Could not find a matching card in JustTCG.');
+                setModalLoading(false);
+                return;
+            }
+
+            // Update the card ID in state
+            state[currentModalKey] = state[currentModalKey] || {};
+            state[currentModalKey].justtcgCardId = resolved.bestCard.id;
+            localStorage.setItem('master_tracker', JSON.stringify(state));
+
+            // Update the display
+            document.getElementById('currentCardId').textContent = resolved.bestCard.id;
+            alert('Card ID resolved: ' + resolved.bestCard.id);
+        } catch (e) {
+            console.error('Resolve error:', e);
+            alert('Error resolving card ID: ' + e.message);
+        } finally {
+            setModalLoading(false);
+        }
+    }
+
     async function refreshCardPrices() {
         if (!currentModalKey) return;
 
         const [sid, num] = currentModalKey.split('-');
         const card = sets[sid].cards.find(c => c.num == num);
+        const cardId = state[currentModalKey]?.justtcgCardId || getJustTcgCardIdForKey(currentModalKey, card);
+
+        if (!cardId) {
+            alert('No card ID found. Please resolve the card ID first.');
+            return;
+        }
+
+        setModalLoading(true, 'Fetching prices...');
 
         try {
-            const cards = await resolveJustTcgCardData(card, currentModalKey);
-            if (!cards || !cards.length) {
-                alert('No card variants were returned for this card.');
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                alert('Enter a JustTCG API key first and save it.');
                 return;
             }
 
-            const variants = extractVariantsFromCards(cards);
+            const headers = { 'x-api-key': apiKey, 'Accept': 'application/json' };
+            const cardRes = await fetch(`https://api.justtcg.com/v1/cards?q=id:"${cardId}"`, { headers });
+            if (!cardRes.ok) throw new Error('Card lookup failed');
+
+            const cardJson = await cardRes.json();
+            const resolvedCard = Array.isArray(cardJson.data) && cardJson.data[0];
+            if (!resolvedCard) {
+                alert('Card ID not found in JustTCG.');
+                setModalLoading(false);
+                return;
+            }
+
+            // Extract and group all variants by edition
+            const variants = Array.isArray(resolvedCard.variants) ? resolvedCard.variants : [];
+            const variantsByEdition = groupVariantsByEdition(variants);
+
+            console.log('Variants by edition:', variantsByEdition);
+
+            // Initialize state
             state[currentModalKey] = state[currentModalKey] || {};
-            state[currentModalKey].variants = variants;
+            const d = state[currentModalKey];
+            d.justtcgCardId = cardId;
+            d.versionBuckets = d.versionBuckets || {};
+
+            // Create or update version buckets for each detected edition
+            for (const [editionLabel, editionVariants] of Object.entries(variantsByEdition)) {
+                const rawPrices = extractPricesByCondition(editionVariants);
+                const psaPrices = extractPricesByGrade(editionVariants);
+
+                d.versionBuckets[editionLabel] = d.versionBuckets[editionLabel] || {};
+                d.versionBuckets[editionLabel].cardId = cardId;
+                d.versionBuckets[editionLabel].prices = {
+                    raw: rawPrices,
+                    psa: psaPrices
+                };
+
+                console.log(`Prices for ${editionLabel}:`, { raw: rawPrices, psa: psaPrices });
+            }
+
+            // Set top-level prices to the first available edition (for fallback)
+            const firstEdition = Object.keys(variantsByEdition)[0];
+            if (firstEdition && d.versionBuckets[firstEdition]) {
+                d.prices = d.versionBuckets[firstEdition].prices;
+            }
+
             localStorage.setItem('master_tracker', JSON.stringify(state));
-            alert('Variants refreshed successfully!');
+            alert('Prices refreshed successfully!');
             showVariantsModal(currentModalKey);
         } catch (e) {
             console.error('Fetch error:', e);
-            alert('Error fetching data: ' + e.message);
+            alert('Error fetching prices: ' + e.message);
+        } finally {
+            setModalLoading(false);
         }
+    }
+
+    function groupVariantsByEdition(variants) {
+        const grouped = {};
+        
+        variants.forEach(variant => {
+            // Detect edition from variant properties
+            const editionLabel = detectEditionFromVariant(variant);
+            if (!editionLabel) return; // Skip if can't determine edition
+            
+            if (!grouped[editionLabel]) {
+                grouped[editionLabel] = [];
+            }
+            grouped[editionLabel].push(variant);
+        });
+        
+        return grouped;
+    }
+
+    function detectEditionFromVariant(variant) {
+        const id = String(variant.id || '').toLowerCase();
+        const printing = String(variant.printing || '').toLowerCase();
+        const haystack = `${id} ${printing}`;
+
+        // Check for 1st Edition
+        if (haystack.includes('1st edition') || haystack.includes('1st-edition') || haystack.includes('first edition')) {
+            return '1st Edition';
+        }
+        
+        // Check for Shadowless
+        if (haystack.includes('shadowless')) {
+            return 'Shadowless';
+        }
+        
+        // Check for Unlimited
+        if (haystack.includes('unlimited')) {
+            return 'Unlimited';
+        }
+
+        // Default fallback: try to infer from other properties
+        if (haystack.includes('shadowless') === false && haystack.includes('1st') === false) {
+            return 'Unlimited'; // Assume unlimited if no edition marker found
+        }
+
+        return null;
+    }
+
+    function extractPricesByCondition(variants) {
+        const prices = { nm: null, lp: null, mp: null, hp: null, dmg: null };
+        
+        variants.forEach(variant => {
+            const condition = normalizeConditionKey(variant?.condition);
+            if (condition && prices.hasOwnProperty(condition) && prices[condition] === null) {
+                const price = pickBestNumericPrice(variant);
+                if (price != null) {
+                    prices[condition] = price;
+                }
+            }
+        });
+        
+        return prices;
+    }
+
+    function extractPricesByGrade(variants) {
+        const grades = { '6': null, '7': null, '8': null, '9': null, '10': null };
+        
+        variants.forEach(variant => {
+            const grading = normalizeGradingCompany(variant?.grading || variant?.gradingCompany || '');
+            if (grading === 'psa') {
+                const grade = normalizeGrade(variant?.grade);
+                if (grade && grades.hasOwnProperty(grade) && grades[grade] === null) {
+                    const price = pickBestNumericPrice(variant);
+                    if (price != null) {
+                        grades[grade] = price;
+                    }
+                }
+            }
+        });
+        
+        return grades;
     }
 
     function showVariantsModal(key) {
         currentModalKey = key;
         const [sid, num] = key.split('-');
         const card = sets[sid].cards.find(c => c.num == num);
-        const data = state[key] || {};
-        const variants = data.variants || [];
+        state[key] = state[key] || {};
+        const data = state[key];
+        if (data.versionBuckets && Object.keys(data.versionBuckets).length) {
+            if (!data.selectedVersionLabel || !data.versionBuckets[data.selectedVersionLabel]) {
+                const preferred = getDefaultVersionLabelForKey(key, sid);
+                data.selectedVersionLabel = data.versionBuckets[preferred]
+                    ? preferred
+                    : Object.keys(data.versionBuckets)[0];
+            }
+            applySelectedVersionToCardState(key);
+        }
+        const selectedBucket = data.versionBuckets && data.selectedVersionLabel ? data.versionBuckets[data.selectedVersionLabel] : null;
+        
+        // Get card ID directly - from bucket if version selected, otherwise from state/mapping
+        let resolvedId = null;
+        if (data.selectedVersionLabel && selectedBucket?.cardId) {
+            // Check if there's an override in the embedded mapping (for manually corrected IDs)
+            const mappedId = EMBEDDED_JUSTTCG_MAPPING && EMBEDDED_JUSTTCG_MAPPING[key];
+            resolvedId = mappedId || selectedBucket.cardId;
+        } else {
+            // Try state first, then embedded mapping
+            resolvedId = data.justtcgCardId || (EMBEDDED_JUSTTCG_MAPPING && EMBEDDED_JUSTTCG_MAPPING[key]) || (JUSTTCG_IDS && JUSTTCG_IDS[key]) || null;
+            // Save to state so refreshCardPrices can find it
+            if (resolvedId && !data.justtcgCardId) {
+                data.justtcgCardId = resolvedId;
+            }
+        }
+        currentResolvedCardId = resolvedId;
+        
+        // Get prices - prefer bucket prices if they're populated, fall back to top-level prices
+        let bucketHasPrices = false;
+        if (selectedBucket?.prices) {
+            const hasAnyPrice = selectedBucket.prices.raw && Object.values(selectedBucket.prices.raw).some(v => v != null);
+            bucketHasPrices = !!hasAnyPrice;
+        }
+        const p = (bucketHasPrices ? selectedBucket.prices : null) || data.prices || getDefaultPriceState();
+        const sourceUrl = getJustTcgSourceUrl(currentResolvedCardId);
+        renderVersionPills(key);
 
-        const variantHtml = variants.length ? variants.map(v => `
-            <div style="border:1px solid #444; padding:10px; border-radius:8px; background:#111;">
-                <div><b>${v.setName} #${v.number}</b> ${v.rarity || ''}</div>
-                ${displayPriceRows(v, key)}
-            </div>
-        `).join('') : '<div>No variants stored yet. Click Refresh API Prices.</div>';
-
-        document.getElementById('modalLeft').innerHTML = `<img src="https://images.pokemontcg.io/${sets[sid].src}/${card.num}.png" style="width:200px"><h4>${card.name}</h4>`;
-        document.getElementById('priceData').innerHTML = variantHtml;
+        document.getElementById('modalLeft').innerHTML = `
+            <img src="https://images.pokemontcg.io/${sets[sid].src}/${card.num}.png" style="width:200px">
+            <h4>${card.name}</h4>
+            <div style="margin-top:6px; font-size:0.8rem; color:#9ecbff;">Version: ${data.selectedVersionLabel || 'N/A'} ${selectedBucket ? `(score ${selectedBucket.score})` : ''}</div>
+            <div style="margin-top:8px; font-size:0.85rem; color:#ccc;">Card ID: ${currentResolvedCardId || 'Not resolved yet'}</div>
+        `;
+        
+        // Update the card ID display in the modal
+        document.getElementById('currentCardId').textContent = currentResolvedCardId || 'Not resolved yet';
+        document.getElementById('priceData').innerHTML = buildModalPriceHtml(p, sourceUrl);
         document.getElementById('valueModal').style.display = 'flex';
     }
 
@@ -627,7 +1875,7 @@
                 if (visibleCards.length === 0) continue;
                 visibleCards.forEach(c => {
                     const d = state[`${sid}-${c.num}`] || {};
-                    html += `<tr><td>${set.name}</td><td>${c.num}</td><td><img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"></td><td>${c.name}</td><td>${d.pending ? '✅' : ''}</td><td>${d.owned ? '✅' : ''}</td></tr>`;
+                    html += `<tr><td>${set.name}</td><td>${c.num}</td><td><img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"></td><td>${c.name}</td><td>${d.pending ? 'âœ…' : ''}</td><td>${d.owned ? 'âœ…' : ''}</td></tr>`;
                 });
             }
             app.innerHTML = html + `</table>`;
@@ -746,3 +1994,4 @@
 </script>
 </body>
 </html>
+

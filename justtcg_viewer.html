@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>JustTCG Viewer</title>
+  <style>
+    body{background:#0f1720;color:#e6eef6;font-family:sans-serif;padding:18px}
+    pre{background:#071024;border:1px solid #233044;padding:12px;overflow:auto;max-height:70vh}
+    button{padding:8px 10px;margin-right:8px}
+    .muted{color:#9fb0c8}
+  </style>
+</head>
+<body>
+  <h2>JustTCG Card Viewer</h2>
+  <div id="info" class="muted"></div>
+  <div style="margin-top:12px;" id="controls"></div>
+  <pre id="output">Waiting for action...</pre>
+
+  <script>
+    function qs(name){ const u=new URL(location.href); return u.searchParams.get(name); }
+    const cardId = qs('cardId');
+    const info = document.getElementById('info');
+    const out = document.getElementById('output');
+    const controls = document.getElementById('controls');
+
+    if(!cardId){ info.textContent = 'No cardId provided. Use ?cardId=... in the URL.'; out.textContent = ''; }
+
+    const apiKey = localStorage.getItem('justtcg_api_key') || '';
+    if(!apiKey){ info.innerHTML = (info.innerHTML||'') + '<div style="color:#ffcc66;margin-top:8px">No JustTCG API key saved. Save it in the app first.</div>'; }
+
+    controls.innerHTML = `<button id="fetchBtn">Fetch card data</button><button id="openRaw">Open raw API URL</button>`;
+
+    document.getElementById('fetchBtn').addEventListener('click', async ()=>{
+      out.textContent = 'Fetching...';
+      try{
+        const url = `https://api.justtcg.com/v1/cards?cardId=${encodeURIComponent(cardId)}`;
+        const res = await fetch(url, { headers: { 'x-api-key': apiKey, 'Accept': 'application/json' } });
+        const txt = await res.text();
+        try{ const j = JSON.parse(txt); out.textContent = JSON.stringify(j, null, 2); }
+        catch(e){ out.textContent = txt; }
+      }catch(e){ out.textContent = 'Error: ' + e.message; }
+    });
+
+    document.getElementById('openRaw').addEventListener('click', ()=>{
+      const url = `https://api.justtcg.com/v1/cards?cardId=${encodeURIComponent(cardId)}`;
+      window.open(url, '_blank');
+    });
+  </script>
+</body>
+</html>

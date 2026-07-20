@@ -3,7 +3,7 @@
 <head>
 <style>
     :root { 
-        --bg: #1a1a1a; --card-bg: #2d2d2d; --base-c: #ff3e3e; --jungle-c: #2ecc71; --fossil-c: #e67e22; --rocket-c: #c0392b; --gymheroes-c: #3498db; --gymchallenge-c: #9b59b6;
+        --bg: #1a1a1a; --card-bg: #2d2d2d; --base-c: #ff3e3e; --jungle-c: #2ecc71; --fossil-c: #e67e22; --rocket-c: #c0392b; --base2-c: #f1c40f; --gymheroes-c: #3498db; --gymchallenge-c: #9b59b6;
         --card-scale: 1.2;
         --card-control-scale: 1;
         --card-gap: 20px;
@@ -46,6 +46,65 @@
     .price-display { font-size: calc(0.75rem * var(--card-control-scale)); color: #aaa; }
     body.hide-values .price-display, body.hide-values .price-input, body.hide-values .price-col { display: none; }
 
+    /* Print View Styles */
+    body.print-mode .header-container { display: none; }
+    body.print-mode .controls > *:not(.actions-center) { display: none; }
+    body.print-mode .actions-center h2 { display: none; }
+    body.print-mode .actions-center button:not([onclick*="toggleView"]) { display: none; }
+    body.print-mode #importFile { display: none; }
+    body.print-mode .page-header { display: none; }
+    body.print-mode .page-wrapper { width: 100%; background: transparent; padding: 10px 10px; border-radius: 0; }
+    body.print-mode .binder-page { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    body.print-mode .card-slot { width: 240px; height: 336px; padding: 4px; border: 1px solid #999; background: white; color: black; display: flex; flex-direction: column; page-break-inside: avoid; }
+    body.print-mode .card-slot.owned { border-color: #000; }
+    body.print-mode .card-slot.pending { border-color: #000; }
+    body.print-mode .thumb { width: 100%; height: 85%; object-fit: contain; margin: 0; display: block; }
+    body.print-mode .card-slot > div:nth-child(2) { display: none; }
+    body.print-mode .card-slot > div:nth-child(3) { display: none; }
+    body.print-mode .card-slot table { width: 100%; margin: 0; font-size: 7px; height: 15%; display: flex; align-items: center; justify-content: center; padding: 1px 0; }
+    body.print-mode .card-slot table tbody { display: flex; flex-wrap: wrap; gap: 0; padding: 0; margin: 0; justify-content: center; line-height: 1; align-items: center; }
+    body.print-mode .card-slot table tr { display: contents; }
+    body.print-mode .card-slot table td { padding: 0; border: none; display: inline-flex; align-items: center; gap: 1px; margin: 0; }
+    body.print-mode .card-slot table td:first-child { flex: 0; margin-right: 2px; }
+    body.print-mode .card-slot table td input[type="checkbox"] { width: 9px; height: 9px; margin: 0; flex-shrink: 0; }
+    body.print-mode .card-slot table td.price-display { display: none; }
+    body.print-mode .card-slot table td.price-col { display: none; }
+    body.print-mode .card-slot button { display: none; }
+
+    /* Table View Styles */
+    body.table-mode .card-slot table { display: none; }
+    body.table-mode .card-slot button { display: none; }
+    body.table-mode .header-container { display: flex; }
+    body.table-mode .header-col:first-of-type { display: none; }
+    body.table-mode .header-col:last-of-type { flex: 0; }
+    body.table-mode .header-col:last-of-type > h3 { display: none; }
+    body.table-mode .header-col:last-of-type > label { display: none !important; }
+    body.table-mode #hideValues { display: none !important; }
+    body.table-mode #hideOwned { display: none !important; }
+    body.table-mode #hidePending { display: none !important; }
+    body.table-mode #hideUnl { display: none !important; }
+    body.table-mode #hide1st { display: none !important; }
+    body.table-mode #hideSdls { display: none !important; }
+    body.table-mode #jtcgGen { display: none !important; }
+    body.table-mode .header-col:last-of-type > div { display: none !important; }
+    body.table-mode #sizeSlider { display: inline-block !important; }
+    body.table-mode .header-col:last-of-type > div:has(#sizeSlider) { display: block !important; }
+    body.table-mode #binderTable { margin-top: 20px; }
+
+    @page { margin: 0.25in; padding: 0; }
+    @media print {
+        * { margin: 0; padding: 0; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+        body.print-mode { margin: 0; padding: 0; }
+        body.print-mode .page-wrapper { padding: 0; margin: 0; width: 100%; }
+        body.print-mode .binder-page { gap: 0; width: 100%; }
+        body.print-mode .card-slot { width: 2.5in; height: 3.3in; page-break-inside: avoid; padding: 2px; margin: 0; }
+        body.print-mode .thumb { height: 85%; object-fit: contain; }
+        body.print-mode .card-slot table { font-size: 6px; height: 15%; justify-content: center; }
+        body.print-mode .card-slot table tbody { justify-content: center; }
+        body.print-mode .actions-center button { display: none; }
+    }
+
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
     .modal-content { background: #222; padding: 30px; border-radius: 12px; width: 800px; display: flex; gap: 30px; border: 1px solid #444; }
     .modal-left { flex: 1; text-align: center; }
@@ -67,6 +126,7 @@
         <div style="margin-top:15px;">
             <button onclick="toggleView('grid')">Binder View</button>
             <button onclick="toggleView('table')">Table View</button>
+            <button onclick="toggleView('print')">Print View</button>
         </div>
     </div>
     <div class="header-container">
@@ -446,6 +506,19 @@
     "rocket-82":  null,
     "rocket-83":  "pokemon-team-rocket-dark-raichu-secret-rare",
     "rocket-9":  "pokemon-team-rocket-dark-hypno-9-holo-rare",
+    "base2-1": null, "base2-2": null, "base2-3": null, "base2-4": null, "base2-5": null, "base2-6": null, "base2-7": null, "base2-8": null, "base2-9": null, "base2-10": null,
+    "base2-11": null, "base2-12": null, "base2-13": null, "base2-14": null, "base2-15": null, "base2-16": null, "base2-17": null, "base2-18": null, "base2-19": null, "base2-20": null,
+    "base2-21": null, "base2-22": null, "base2-23": null, "base2-24": null, "base2-25": null, "base2-26": null, "base2-27": null, "base2-28": null, "base2-29": null, "base2-30": null,
+    "base2-31": null, "base2-32": null, "base2-33": null, "base2-34": null, "base2-35": null, "base2-36": null, "base2-37": null, "base2-38": null, "base2-39": null, "base2-40": null,
+    "base2-41": null, "base2-42": null, "base2-43": null, "base2-44": null, "base2-45": null, "base2-46": null, "base2-47": null, "base2-48": null, "base2-49": null, "base2-50": null,
+    "base2-51": null, "base2-52": null, "base2-53": null, "base2-54": null, "base2-55": null, "base2-56": null, "base2-57": null, "base2-58": null, "base2-59": null, "base2-60": null,
+    "base2-61": null, "base2-62": null, "base2-63": null, "base2-64": null, "base2-65": null, "base2-66": null, "base2-67": null, "base2-68": null, "base2-69": null, "base2-70": null,
+    "base2-71": null, "base2-72": null, "base2-73": null, "base2-74": null, "base2-75": null, "base2-76": null, "base2-77": null, "base2-78": null, "base2-79": null, "base2-80": null,
+    "base2-81": null, "base2-82": null, "base2-83": null, "base2-84": null, "base2-85": null, "base2-86": null, "base2-87": null, "base2-88": null, "base2-89": null, "base2-90": null,
+    "base2-91": null, "base2-92": null, "base2-93": null, "base2-94": null, "base2-95": null, "base2-96": null, "base2-97": null, "base2-98": null, "base2-99": null, "base2-100": null,
+    "base2-101": null, "base2-102": null, "base2-103": null, "base2-104": null, "base2-105": null, "base2-106": null, "base2-107": null, "base2-108": null, "base2-109": null, "base2-110": null,
+    "base2-111": null, "base2-112": null, "base2-113": null, "base2-114": null, "base2-115": null, "base2-116": null, "base2-117": null, "base2-118": null, "base2-119": null, "base2-120": null,
+    "base2-121": null, "base2-122": null, "base2-123": null, "base2-124": null, "base2-125": null, "base2-126": null, "base2-127": null, "base2-128": null, "base2-129": null, "base2-130": null,
     "gymheroes-1": null, "gymheroes-2": null, "gymheroes-3": null, "gymheroes-4": null, "gymheroes-5": null, "gymheroes-6": null, "gymheroes-7": null, "gymheroes-8": null, "gymheroes-9": null, "gymheroes-10": null,
     "gymheroes-11": null, "gymheroes-12": null, "gymheroes-13": null, "gymheroes-14": null, "gymheroes-15": null, "gymheroes-16": null, "gymheroes-17": null, "gymheroes-18": null, "gymheroes-19": null, "gymheroes-20": null,
     "gymheroes-21": null, "gymheroes-22": null, "gymheroes-23": null, "gymheroes-24": null, "gymheroes-25": null, "gymheroes-26": null, "gymheroes-27": null, "gymheroes-28": null, "gymheroes-29": null, "gymheroes-30": null,
@@ -481,6 +554,7 @@
     const fossilCards = [{num:1,name:"Aerodactyl"},{num:2,name:"Articuno"},{num:3,name:"Ditto"},{num:4,name:"Dragonite"},{num:5,name:"Gengar"},{num:6,name:"Haunter"},{num:7,name:"Hitmonlee"},{num:8,name:"Hypno"},{num:9,name:"Kabutops"},{num:10,name:"Lapras"},{num:11,name:"Magneton"},{num:12,name:"Moltres"},{num:13,name:"Muk"},{num:14,name:"Raichu"},{num:15,name:"Zapdos"},{num:16,name:"Aerodactyl"},{num:17,name:"Articuno"},{num:18,name:"Ditto"},{num:19,name:"Dragonite"},{num:20,name:"Gengar"},{num:21,name:"Haunter"},{num:22,name:"Hitmonlee"},{num:23,name:"Hypno"},{num:24,name:"Kabutops"},{num:25,name:"Lapras"},{num:26,name:"Magneton"},{num:27,name:"Moltres"},{num:28,name:"Muk"},{num:29,name:"Raichu"},{num:30,name:"Zapdos"},{num:31,name:"Arbok"},{num:32,name:"Cloyster"},{num:33,name:"Gastly"},{num:34,name:"Golbat"},{num:35,name:"Golduck"},{num:36,name:"Golem"},{num:37,name:"Graveler"},{num:38,name:"Kingler"},{num:39,name:"Magmar"},{num:40,name:"Omastar"},{num:41,name:"Sandslash"},{num:42,name:"Seadra"},{num:43,name:"Slowbro"},{num:44,name:"Tentacruel"},{num:45,name:"Weezing"},{num:46,name:"Ekans"},{num:47,name:"Geodude"},{num:48,name:"Grimer"},{num:49,name:"Horsea"},{num:50,name:"Kabuto"},{num:51,name:"Krabby"},{num:52,name:"Omanyte"},{num:53,name:"Psyduck"},{num:54,name:"Shellder"},{num:55,name:"Slowpoke"},{num:56,name:"Tentacool"},{num:57,name:"Zubat"},{num:58,name:"Mr. Fuji"},{num:59,name:"Energy Search"},{num:60,name:"Gambler"},{num:61,name:"Recycle"},{num:62,name:"Mysterious Fossil"}];
     const gymHeroesCards = [{num:1,name:"Blaine's Moltres"},{num:2,name:"Brock's Ninetales"},{num:3,name:"Brock's Rhydon"},{num:4,name:"Brock's Sandslash"},{num:5,name:"Erika's Clefable"},{num:6,name:"Erika's Dragonair"},{num:7,name:"Erika's Victreebel"},{num:8,name:"Erika's Vileplume"},{num:9,name:"Lt. Surge's Electabuzz"},{num:10,name:"Lt. Surge's Fearow"},{num:11,name:"Lt. Surge's Magneton"},{num:12,name:"Misty's Dewgong"},{num:13,name:"Misty's Gyarados"},{num:14,name:"Misty's Lapras"},{num:15,name:"Misty's Seadra"},{num:16,name:"Misty's Starmie"},{num:17,name:"Misty's Tentacruel"},{num:18,name:"Misty's Wartortle"},{num:19,name:"Sabrina's Gengar"},{num:20,name:"Lt. Surge's Jolteon"},{num:21,name:"Blaine's Arcanine"},{num:22,name:"Blaine's Charmeleon"},{num:23,name:"Blaine's Growlithe"},{num:24,name:"Brock's Golbat"},{num:25,name:"Brock's Graveler"},{num:26,name:"Brock's Lickitung"},{num:27,name:"Brock's Onix"},{num:28,name:"Brock's Rhyhorn"},{num:29,name:"Brock's Sandshrew"},{num:30,name:"Brock's Vulpix"},{num:31,name:"Brock's Zubat"},{num:32,name:"Erika's Bellsprout"},{num:33,name:"Erika's Bulbasaur"},{num:34,name:"Erika's Exeggcute"},{num:35,name:"Erika's Gloom"},{num:36,name:"Erika's Ivysaur"},{num:37,name:"Erika's Oddish"},{num:38,name:"Erika's Paras"},{num:39,name:"Erika's Tangela"},{num:40,name:"Erika's Weepinbell"},{num:41,name:"Erika's Clefairy"},{num:42,name:"Lt. Surge's Drowzee"},{num:43,name:"Lt. Surge's Electrode"},{num:44,name:"Lt. Surge's Gyarados"},{num:45,name:"Lt. Surge's Magnemite"},{num:46,name:"Lt. Surge's Pikachu"},{num:47,name:"Lt. Surge's Raticate"},{num:48,name:"Lt. Surge's Raichu"},{num:49,name:"Lt. Surge's Voltorb"},{num:50,name:"Misty's Cloyster"},{num:51,name:"Misty's Goldeen"},{num:52,name:"Misty's Horsea"},{num:53,name:"Misty's Magikarp"},{num:54,name:"Misty's Poliwag"},{num:55,name:"Misty's Psyduck"},{num:56,name:"Misty's Shellder"},{num:57,name:"Misty's Staryu"},{num:58,name:"Misty's Tentacool"},{num:59,name:"Sabrina's Abra"},{num:60,name:"Sabrina's Drowzee"},{num:61,name:"Sabrina's Gastly"},{num:62,name:"Sabrina's Haunter"},{num:63,name:"Sabrina's Jynx"},{num:64,name:"Sabrina's Kadabra"},{num:65,name:"Sabrina's Mr. Mime"},{num:66,name:"Sabrina's Slowpoke"},{num:67,name:"Sabrina's Venonat"},{num:68,name:"Blaine"},{num:69,name:"Blaine's Last Resort"},{num:70,name:"Blaine's Quiz #1"},{num:71,name:"Blaine's Quiz #2"},{num:72,name:"Blaine's Quiz #3"},{num:73,name:"Brock"},{num:74,name:"Brock's Protection"},{num:75,name:"Brock's Training Method"},{num:76,name:"Erika"},{num:77,name:"Erika's Maids"},{num:78,name:"Erika's Perfume"},{num:79,name:"Good Manners"},{num:80,name:"Lass"},{num:81,name:"Lt. Surge"},{num:82,name:"Lt. Surge's Treaty"},{num:83,name:"Misty"},{num:84,name:"Misty's Duel"},{num:85,name:"Misty's Tears"},{num:86,name:"Misty's Wish"},{num:87,name:"Pokémon Tower"},{num:88,name:"Rocket's Training Gym"},{num:89,name:"Sabrina"},{num:90,name:"Sabrina's ESP"},{num:91,name:"Sabrina's Gaze"},{num:92,name:"Secret Mission"},{num:93,name:"Surge's Trick"},{num:94,name:"The Misty Challenge"},{num:95,name:"Tickling Machine"},{num:96,name:"Trash Exchange"},{num:97,name:"Wake-Up Slap"},{num:98,name:"Brock's Pokémon Breeder Fields"},{num:99,name:"Blaine's Charmander"},{num:100,name:"Blaine's Growlithe"},{num:101,name:"Blaine's Ponyta"},{num:102,name:"Brock's Diglett"},{num:103,name:"Brock's Dugtrio"},{num:104,name:"Brock's Geodude"},{num:105,name:"Brock's Mankey"},{num:106,name:"Brock's Persian"},{num:107,name:"Brock's Rhyhorn"},{num:108,name:"Erika's Bellsprout"},{num:109,name:"Erika's Bulbasaur"},{num:110,name:"Erika's Exeggcute"},{num:111,name:"Erika's Oddish"},{num:112,name:"Lt. Surge's Drowzee"},{num:113,name:"Lt. Surge's Electrode"},{num:114,name:"Lt. Surge's Magnemite"},{num:115,name:"Lt. Surge's Pikachu"},{num:116,name:"Lt. Surge's Voltorb"},{num:117,name:"Misty's Goldeen"},{num:118,name:"Misty's Horsea"},{num:119,name:"Misty's Magikarp"},{num:120,name:"Misty's Poliwag"},{num:121,name:"Misty's Psyduck"},{num:122,name:"Misty's Shellder"},{num:123,name:"Misty's Staryu"},{num:124,name:"Misty's Tentacool"},{num:125,name:"Sabrina's Abra"},{num:126,name:"Sabrina's Drowzee"},{num:127,name:"Sabrina's Gastly"},{num:128,name:"Sabrina's Jynx"},{num:129,name:"Sabrina's Kadabra"},{num:130,name:"Sabrina's Slowpoke"},{num:131,name:"Sabrina's Venonat"},{num:132,name:"Fighting Energy"}];
     const gymChallengeCards = [{num:1,name:"Blaine's Charizard"},{num:2,name:"Giovanni's Gyarados"},{num:3,name:"Giovanni's Machamp"},{num:4,name:"Giovanni's Nidoking"},{num:5,name:"Giovanni's Persian"},{num:6,name:"Giovanni's Pinsir"},{num:7,name:"Koga's Beedrill"},{num:8,name:"Koga's Ditto"},{num:9,name:"Koga's Muk"},{num:10,name:"Koga's Pidgeot"},{num:11,name:"Lt. Surge's Raichu"},{num:12,name:"Sabrina's Alakazam"},{num:13,name:"Blaine's Ninetales"},{num:14,name:"Erika's Vileplume"},{num:15,name:"Giovanni's Nidoqueen"},{num:16,name:"Koga's Arbok"},{num:17,name:"Koga's Weezing"},{num:18,name:"Sabrina's Chansey"},{num:19,name:"Blaine's Arcanine"},{num:20,name:"Blaine's Charmeleon"},{num:21,name:"Blaine's Growlithe"},{num:22,name:"Giovanni's Mewtwo"},{num:23,name:"Giovanni's Nidorino"},{num:24,name:"Giovanni's Rhyhorn"},{num:25,name:"Giovanni's Slowbro"},{num:26,name:"Koga's Ekans"},{num:27,name:"Koga's Golbat"},{num:28,name:"Koga's Grimer"},{num:29,name:"Koga's Kakuna"},{num:30,name:"Koga's Koffing"},{num:31,name:"Lt. Surge's Electabuzz"},{num:32,name:"Lt. Surge's Magneton"},{num:33,name:"Sabrina's Abra"},{num:34,name:"Sabrina's Haunter"},{num:35,name:"Sabrina's Hypno"},{num:36,name:"Sabrina's Kadabra"},{num:37,name:"Sabrina's Mr. Mime"},{num:38,name:"Sabrina's Slowbro"},{num:39,name:"Erika's Bellsprout"},{num:40,name:"Erika's Bulbasaur"},{num:41,name:"Erika's Exeggcute"},{num:42,name:"Erika's Gloom"},{num:43,name:"Erika's Oddish"},{num:44,name:"Erika's Paras"},{num:45,name:"Erika's Tangela"},{num:46,name:"Erika's Weepinbell"},{num:47,name:"Misty's Horsea"},{num:48,name:"Misty's Poliwag"},{num:49,name:"Misty's Psyduck"},{num:50,name:"Misty's Tentacool"},{num:51,name:"Blaine's Charmander"},{num:52,name:"Blaine's Ponyta"},{num:53,name:"Blaine's Vulpix"},{num:54,name:"Giovanni's Diglett"},{num:55,name:"Giovanni's Dugtrio"},{num:56,name:"Giovanni's Geodude"},{num:57,name:"Giovanni's Graveler"},{num:58,name:"Giovanni's Machoke"},{num:59,name:"Giovanni's Magnemite"},{num:60,name:"Giovanni's Rhyhorn"},{num:61,name:"Koga's Beedrill"},{num:62,name:"Koga's Ekans"},{num:63,name:"Koga's Golbat"},{num:64,name:"Koga's Grimer"},{num:65,name:"Koga's Kakuna"},{num:66,name:"Koga's Koffing"},{num:67,name:"Koga's Weedle"},{num:68,name:"Koga's Zubat"},{num:69,name:"Lt. Surge's Drowzee"},{num:70,name:"Lt. Surge's Electrode"},{num:71,name:"Lt. Surge's Magnemite"},{num:72,name:"Lt. Surge's Pikachu"},{num:73,name:"Lt. Surge's Voltorb"},{num:74,name:"Sabrina's Abra"},{num:75,name:"Sabrina's Drowzee"},{num:76,name:"Sabrina's Gastly"},{num:77,name:"Sabrina's Haunter"},{num:78,name:"Sabrina's Jynx"},{num:79,name:"Sabrina's Slowpoke"},{num:80,name:"Sabrina's Venonat"},{num:81,name:"Erika's Bellsprout"},{num:82,name:"Erika's Bulbasaur"},{num:83,name:"Erika's Exeggcute"},{num:84,name:"Erika's Oddish"},{num:85,name:"Blaine"},{num:86,name:"Blaine's Pokémon Rescue"},{num:87,name:"Giovanni"},{num:88,name:"Giovanni's Scheme"},{num:89,name:"Koga"},{num:90,name:"Koga's Ninja Trick"},{num:91,name:"Koga's Trap"},{num:92,name:"Lt. Surge"},{num:93,name:"Lt. Surge's Secret Plan"},{num:94,name:"Misty"},{num:95,name:"Misty's Tears"},{num:96,name:"Sabrina"},{num:97,name:"Sabrina's Psychic Control"},{num:98,name:"Erika"},{num:99,name:"Blaine's Charmander"},{num:100,name:"Blaine's Growlithe"},{num:101,name:"Blaine's Ponyta"},{num:102,name:"Blaine's Vulpix"},{num:103,name:"Giovanni's Diglett"},{num:104,name:"Giovanni's Dugtrio"},{num:105,name:"Giovanni's Geodude"},{num:106,name:"Giovanni's Magnemite"},{num:107,name:"Giovanni's Nidoran ♂"},{num:108,name:"Giovanni's Nidoran ♀"},{num:109,name:"Giovanni's Rhyhorn"},{num:110,name:"Koga's Ekans"},{num:111,name:"Koga's Grimer"},{num:112,name:"Koga's Koffing"},{num:113,name:"Koga's Weedle"},{num:114,name:"Koga's Zubat"},{num:115,name:"Lt. Surge's Drowzee"},{num:116,name:"Lt. Surge's Electrode"},{num:117,name:"Lt. Surge's Pikachu"},{num:118,name:"Lt. Surge's Voltorb"},{num:119,name:"Sabrina's Abra"},{num:120,name:"Sabrina's Drowzee"},{num:121,name:"Sabrina's Gastly"},{num:122,name:"Sabrina's Slowpoke"},{num:123,name:"Erika's Bellsprout"},{num:124,name:"Erika's Exeggcute"},{num:125,name:"Erika's Oddish"},{num:126,name:"Misty's Horsea"},{num:127,name:"Misty's Magikarp"},{num:128,name:"Misty's Poliwag"},{num:129,name:"Misty's Psyduck"},{num:130,name:"Grass Energy"},{num:131,name:"Fire Energy"},{num:132,name:"Psychic Energy"}];
+    const base2Cards = [{num:1,name:"Alakazam"},{num:2,name:"Blastoise"},{num:3,name:"Chansey"},{num:4,name:"Charizard"},{num:5,name:"Clefable"},{num:6,name:"Clefairy"},{num:7,name:"Gyarados"},{num:8,name:"Hitmonchan"},{num:9,name:"Magneton"},{num:10,name:"Mewtwo"},{num:11,name:"Nidoking"},{num:12,name:"Nidoqueen"},{num:13,name:"Ninetales"},{num:14,name:"Pidgeot"},{num:15,name:"Poliwrath"},{num:16,name:"Raichu"},{num:17,name:"Scyther"},{num:18,name:"Venusaur"},{num:19,name:"Wigglytuff"},{num:20,name:"Zapdos"},{num:21,name:"Beedrill"},{num:22,name:"Dragonair"},{num:23,name:"Dugtrio"},{num:24,name:"Electabuzz"},{num:25,name:"Electrode"},{num:26,name:"Kangaskhan"},{num:27,name:"Mr. Mime"},{num:28,name:"Pidgeotto"},{num:29,name:"Pinsir"},{num:30,name:"Snorlax"},{num:31,name:"Venomoth"},{num:32,name:"Victreebel"},{num:33,name:"Arcanine"},{num:34,name:"Butterfree"},{num:35,name:"Charmeleon"},{num:36,name:"Dewgong"},{num:37,name:"Dodrio"},{num:38,name:"Dratini"},{num:39,name:"Exeggutor"},{num:40,name:"Farfetch'd"},{num:41,name:"Fearow"},{num:42,name:"Growlithe"},{num:43,name:"Haunter"},{num:44,name:"Ivysaur"},{num:45,name:"Jynx"},{num:46,name:"Kadabra"},{num:47,name:"Kakuna"},{num:48,name:"Lickitung"},{num:49,name:"Machoke"},{num:50,name:"Magikarp"},{num:51,name:"Magmar"},{num:52,name:"Marowak"},{num:53,name:"Nidorina"},{num:54,name:"Nidorino"},{num:55,name:"Parasect"},{num:56,name:"Persian"},{num:57,name:"Poliwhirl"},{num:58,name:"Raticate"},{num:59,name:"Rhydon"},{num:60,name:"Seaking"},{num:61,name:"Seel"},{num:62,name:"Tauros"},{num:63,name:"Wartortle"},{num:64,name:"Weepinbell"},{num:65,name:"Abra"},{num:66,name:"Bellsprout"},{num:67,name:"Bulbasaur"},{num:68,name:"Caterpie"},{num:69,name:"Charmander"},{num:70,name:"Cubone"},{num:71,name:"Diglett"},{num:72,name:"Doduo"},{num:73,name:"Drowzee"},{num:74,name:"Exeggcute"},{num:75,name:"Gastly"},{num:76,name:"Goldeen"},{num:77,name:"Jigglypuff"},{num:78,name:"Machop"},{num:79,name:"Magnemite"},{num:80,name:"Meowth"},{num:81,name:"Metapod"},{num:82,name:"Nidoran♀"},{num:83,name:"Nidoran♂"},{num:84,name:"Onix"},{num:85,name:"Paras"},{num:86,name:"Pidgey"},{num:87,name:"Pikachu"},{num:88,name:"Poliwag"},{num:89,name:"Rattata"},{num:90,name:"Rhyhorn"},{num:91,name:"Sandshrew"},{num:92,name:"Spearow"},{num:93,name:"Squirtle"},{num:94,name:"Starmie"},{num:95,name:"Staryu"},{num:96,name:"Tangela"},{num:97,name:"Venonat"},{num:98,name:"Voltorb"},{num:99,name:"Vulpix"},{num:100,name:"Weedle"},{num:101,name:"Computer Search"},{num:102,name:"Imposter Professor Oak"},{num:103,name:"Item Finder"},{num:104,name:"Lass"},{num:105,name:"Pokémon Breeder"},{num:106,name:"Pokémon Trader"},{num:107,name:"Scoop Up"},{num:108,name:"Super Energy Removal"},{num:109,name:"Defender"},{num:110,name:"Energy Retrieval"},{num:111,name:"Full Heal"},{num:112,name:"Maintenance"},{num:113,name:"PlusPower"},{num:114,name:"Pokémon Center"},{num:115,name:"Pokédex"},{num:116,name:"Professor Oak"},{num:117,name:"Super Potion"},{num:118,name:"Bill"},{num:119,name:"Energy Removal"},{num:120,name:"Gust of Wind"},{num:121,name:"Poké Ball"},{num:122,name:"Potion"},{num:123,name:"Switch"},{num:124,name:"Double Colorless Energy"},{num:125,name:"Fighting Energy"},{num:126,name:"Fire Energy"},{num:127,name:"Grass Energy"},{num:128,name:"Lightning Energy"},{num:129,name:"Psychic Energy"},{num:130,name:"Water Energy"}];
     const rocketCards = [{num:1,name:"Dark Alakazam"},{num:2,name:"Dark Arbok"},{num:3,name:"Dark Blastoise"},{num:4,name:"Dark Charizard"},{num:5,name:"Dark Dragonite"},{num:6,name:"Dark Dugtrio"},{num:7,name:"Dark Golbat"},{num:8,name:"Dark Gyarados"},{num:9,name:"Dark Hypno"},{num:10,name:"Dark Machamp"},{num:11,name:"Dark Magneton"},{num:12,name:"Dark Slowbro"},{num:13,name:"Dark Vileplume"},{num:14,name:"Dark Weezing"},{num:15,name:"Here Comes Team Rocket!"},{num:16,name:"Rocket's Sneak Attack"},{num:17,name:"Rainbow Energy"},{num:18,name:"Dark Alakazam"},{num:19,name:"Dark Arbok"},{num:20,name:"Dark Blastoise"},{num:21,name:"Dark Charizard"},{num:22,name:"Dark Dragonite"},{num:23,name:"Dark Dugtrio"},{num:24,name:"Dark Golbat"},{num:25,name:"Dark Gyarados"},{num:26,name:"Dark Hypno"},{num:27,name:"Dark Machamp"},{num:28,name:"Dark Magneton"},{num:29,name:"Dark Slowbro"},{num:30,name:"Dark Vileplume"},{num:31,name:"Dark Weezing"},{num:32,name:"Dark Charmeleon"},{num:33,name:"Dark Dragonair"},{num:34,name:"Dark Electrode"},{num:35,name:"Dark Flareon"},{num:36,name:"Dark Gloom"},{num:37,name:"Dark Golduck"},{num:38,name:"Dark Jolteon"},{num:39,name:"Dark Magneton"},{num:40,name:"Dark Machoke"},{num:41,name:"Dark Muk"},{num:42,name:"Dark Persian"},{num:43,name:"Dark Primeape"},{num:44,name:"Dark Rapidash"},{num:45,name:"Dark Vaporeon"},{num:46,name:"Dark Wartortle"},{num:47,name:"Magikarp"},{num:48,name:"Porygon"},{num:49,name:"Abra"},{num:50,name:"Charmander"},{num:51,name:"Dark Raticate"},{num:52,name:"Diglett"},{num:53,name:"Dratini"},{num:54,name:"Drowzee"},{num:55,name:"Eevee"},{num:56,name:"Ekans"},{num:57,name:"Grimer"},{num:58,name:"Koffing"},{num:59,name:"Machop"},{num:60,name:"Magnemite"},{num:61,name:"Mankey"},{num:62,name:"Meowth"},{num:63,name:"Oddish"},{num:64,name:"Ponyta"},{num:65,name:"Psyduck"},{num:66,name:"Rattata"},{num:67,name:"Slowpoke"},{num:68,name:"Squirtle"},{num:69,name:"Voltorb"},{num:70,name:"Zubat"},{num:71,name:"Here Comes Team Rocket!"},{num:72,name:"Rocket's Sneak Attack"},{num:73,name:"The Boss's Way"},{num:74,name:"Challenge"},{num:75,name:"Digger"},{num:76,name:"Imposter Oak's Revenge"},{num:77,name:"Nightly Garbage Run"},{num:78,name:"Goop Gas Attack"},{num:79,name:"Sleep!"},{num:80,name:"Rainbow Energy"},{num:81,name:"Full Heal Energy"},{num:82,name:"Potion Energy"},{num:83,name:"Dark Raichu"}];
 	
     const sets = {
@@ -488,6 +562,7 @@
         jungle: { name: "Jungle", justtcgSetNames: ['Jungle'], color: "var(--jungle-c)", src: "base2", vars: ['unl', '1st', 'fp'], cards: typeof jungleCards !== 'undefined' ? jungleCards : [] },
         fossil: { name: "Fossil", justtcgSetNames: ['Fossil'], color: "var(--fossil-c)", src: "base3", vars: ['unl', '1st'], cards: typeof fossilCards !== 'undefined' ? fossilCards : [] },
         rocket: { name: "Rocket", justtcgSetNames: ['Team Rocket', 'Rocket'], color: "var(--rocket-c)", src: "base5", vars: ['unl', '1st'], cards: typeof rocketCards !== 'undefined' ? rocketCards : [] },
+        base2: { name: "Base Set 2", justtcgSetNames: ['Base Set 2'], color: "var(--base2-c)", src: "base4", vars: ['unl'], cards: typeof base2Cards !== 'undefined' ? base2Cards : [] },
         gymheroes: { name: "Gym Heroes", justtcgSetNames: ['Gym Heroes'], color: "var(--gymheroes-c)", src: "gym1", vars: ['unl', '1st'], cards: typeof gymHeroesCards !== 'undefined' ? gymHeroesCards : [] },
         gymchallenge: { name: "Gym Challenge", justtcgSetNames: ['Gym Challenge'], color: "var(--gymchallenge-c)", src: "gym2", vars: ['unl', '1st'], cards: typeof gymChallengeCards !== 'undefined' ? gymChallengeCards : [] }
     };
@@ -526,7 +601,12 @@
         render();
     }
 
-    function toggleView(mode) { viewMode = mode; render(); }
+    function toggleView(mode) { 
+        viewMode = mode; 
+        document.body.classList.toggle('print-mode', mode === 'print');
+        document.body.classList.toggle('table-mode', mode === 'table');
+        render(); 
+    }
     function toggleSet(sid, hidden) { hidden ? hiddenSets.add(sid) : hiddenSets.delete(sid); render(); }
     function toggleValues(hidden) { document.body.classList.toggle('hide-values', hidden); }
 
@@ -2205,10 +2285,10 @@
             }
             app.innerHTML = html + `</table>`;
         } else {
-            const groupMode = state.settings.groupMode || 'pages';
+            const groupMode = viewMode === 'print' ? 'pages' : (state.settings.groupMode || 'pages');
             for (const [sid, set] of Object.entries(sets)) {
                 if (hiddenSets.has(sid)) continue;
-                if (groupMode === 'sets') {
+                if (groupMode === 'sets' && viewMode !== 'print') {
                     const visibleCards = set.cards.filter(c => {
                         const d = state[`${sid}-${c.num}`] || {};
                         return !((f.hideOwned && d.owned) || (f.hidePending && d.pending) || (f.hideUnl && d.unl) || (f.hide1st && d['1st']) || (f.hideSdls && d.sdls));

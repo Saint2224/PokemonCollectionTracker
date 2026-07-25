@@ -29,9 +29,16 @@
     .filters-panel { flex: 1 1 auto; min-width: 0; }
     .api-panel { margin-top: 15px; }
     
-    .set-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
-    .progress-bg { flex-grow: 1; height: 10px; background: #444; border-radius: 5px; overflow: hidden; }
-    .progress-fill { height: 100%; background: #2ecc71; transition: width 0.3s; }
+    .set-row { display: flex; align-items: flex-start; gap: 10px; margin: 10px 0; }
+    .set-name { width: 90px; font-size: 0.9rem; margin-top: 1px; }
+    .set-progress-col { flex: 1 1 auto; min-width: 0; }
+    .progress-line { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .progress-label { width: 160px; font-size: 0.8rem; color: #ddd; white-space: nowrap; }
+    .progress-bg { flex-grow: 1; height: 10px; background: #444; border-radius: 5px; overflow: hidden; display: flex; }
+    .progress-fill { height: 100%; transition: width 0.3s; flex: 0 0 auto; }
+    .progress-fill.owned { background: #2ecc71; }
+    .progress-fill.pending { background: #f1c40f; }
+    .set-completion { font-size: 0.8rem; color: #bbb; }
     
     #binderTable { width: 100%; border-collapse: collapse; background: #222; margin-top: 20px; font-size: 0.9rem; }
     #binderTable th, #binderTable td { padding: 8px; border: 1px solid #444; text-align: center; }
@@ -2410,8 +2417,37 @@
         const trackerContainer = document.getElementById('setTrackers');
         trackerContainer.innerHTML = '';
         for (const [sid, set] of Object.entries(sets)) {
-            const percent = set.cards.length > 0 ? Math.round((set.cards.filter(c => state[`${sid}-${c.num}`]?.owned).length / set.cards.length) * 100) : 0;
-            trackerContainer.innerHTML += `<div class="set-row"><input type="checkbox" ${!hiddenSets.has(sid) ? 'checked' : ''} onchange="toggleSet('${sid}', !this.checked)"> <span style="width:60px">${set.name}</span> <div class="progress-bg"><div class="progress-fill" style="width:${percent}%"></div></div> <span>${percent}%</span></div>`;
+            const totalCards = set.cards.length;
+            const ownedCount = set.cards.filter(c => state[`${sid}-${c.num}`]?.owned).length;
+            const pendingCount = set.cards.filter(c => state[`${sid}-${c.num}`]?.pending).length;
+            const completionCount = set.cards.filter(c => {
+                const d = state[`${sid}-${c.num}`] || {};
+                return !!d.owned || !!d.pending;
+            }).length;
+            const ownedPercent = totalCards > 0 ? Math.round((ownedCount / totalCards) * 100) : 0;
+            const pendingPercent = totalCards > 0 ? Math.round((pendingCount / totalCards) * 100) : 0;
+            const completionPercent = totalCards > 0 ? Math.round((completionCount / totalCards) * 100) : 0;
+            const pendingStackPercent = Math.max(0, Math.min(pendingPercent, 100 - ownedPercent));
+
+            trackerContainer.innerHTML += `
+                <div class="set-row">
+                    <input type="checkbox" ${!hiddenSets.has(sid) ? 'checked' : ''} onchange="toggleSet('${sid}', !this.checked)">
+                    <span class="set-name">${set.name}</span>
+                    <div class="set-progress-col">
+                        <div class="progress-line">
+                            <span class="progress-label">Owned ${ownedCount}/${totalCards} (${ownedPercent}%)</span>
+                            <span class="progress-label">Pending ${pendingCount}/${totalCards} (${pendingPercent}%)</span>
+                        </div>
+                        <div class="progress-line">
+                            <div class="progress-bg">
+                                <div class="progress-fill owned" style="width:${ownedPercent}%"></div>
+                                <div class="progress-fill pending" style="width:${pendingStackPercent}%"></div>
+                            </div>
+                        </div>
+                        <div class="set-completion">Completion (owned or pending): ${completionPercent}% (${completionCount}/${totalCards})</div>
+                    </div>
+                </div>
+            `;
         }
 
         app.innerHTML = '';

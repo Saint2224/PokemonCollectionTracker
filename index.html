@@ -38,15 +38,18 @@
     #binderTable .thumb { width: calc(60px * var(--card-scale)); }
 
     #app { display: flex; flex-wrap: wrap; gap: var(--card-gap); justify-content: center; }
+    #app.sets-layout { justify-content: flex-start; align-items: flex-start; }
     .page-wrapper { width: calc(650px * var(--card-scale)); max-width: 100%; background: #111; padding: 15px; border-radius: 15px; }
     .page-header { font-size: calc(1.5rem * var(--card-control-scale)); font-weight: bold; border-bottom: 3px solid; padding-bottom: 5px; display: inline-block; margin-bottom: 15px; }
     .binder-page { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--card-gap); }
 
-     /* When viewing grouped as full sets, allow the set page to expand horizontally
-         and layout cards left-to-right, wrapping to new rows only when needed. */
-     .page-wrapper.set-page { width: 100%; }
-     .page-wrapper.set-page .binder-page { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--card-gap); }
+     /* In sets view, let each set container size to its visible cards so sparse sets can sit side-by-side. */
+     .page-wrapper.set-page { width: fit-content; max-width: 100%; flex: 0 1 auto; }
+     .page-wrapper.set-page .binder-page { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--card-gap); width: fit-content; max-width: 100%; }
      .page-wrapper.set-page .card-slot { flex: 0 0 calc(200px * var(--card-scale)); max-width: calc(200px * var(--card-scale)); }
+    .page-wrapper.set-page.set-page-sparse { padding: 10px; }
+    .page-wrapper.set-page.set-page-sparse .page-header { margin-bottom: 10px; }
+    .page-wrapper.set-page.set-page-sparse .binder-page { gap: calc(var(--card-gap) * 0.55); }
     
     .card-slot { background: var(--card-bg); padding: calc(10px * var(--card-control-scale)); border-radius: 8px; border: 2px solid #444; text-align: center; display: flex; flex-direction: column; font-size: calc(0.9rem * var(--card-control-scale)); }
     .thumb { width: 100%; height: auto; display: block; margin: 0 auto; }
@@ -134,6 +137,18 @@
     .modal-left { flex: 1; text-align: center; }
     .modal-right { flex: 2; }
     .val-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .note-field { margin-top: 14px; }
+    .note-field textarea {
+        width: 100%;
+        min-height: 92px;
+        resize: vertical;
+        background: #1a1a1a;
+        color: #fff;
+        border: 1px solid #555;
+        border-radius: 8px;
+        padding: 8px 10px;
+        box-sizing: border-box;
+    }
     .loading-row { display: none; align-items: center; gap: 10px; margin: 8px 0 12px 0; color: #b7d6ff; font-size: 0.9rem; }
     .spinner { width: 14px; height: 14px; border: 2px solid #35506e; border-top-color: #4da3ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -249,6 +264,10 @@
             <div id="modalLoading" class="loading-row"><span class="spinner"></span><span id="modalLoadingText">Loading prices...</span></div>
             <div id="versionPills" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;"></div>
             <div id="priceData" class="val-grid"></div>
+            <div class="note-field">
+                <label for="modalNote" style="display:block; margin-bottom:6px; color:#ddd;">Note</label>
+                <textarea id="modalNote" placeholder="Add notes for this card..." oninput="saveModalNote(this.value)"></textarea>
+            </div>
             <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
                 <button id="resolveIdBtn" onclick="resolveCardId()">Resolve Card ID</button>
                 <button id="refreshPricesBtn" onclick="refreshCardPrices()">Refresh API Prices</button>
@@ -1513,6 +1532,19 @@
         return `justtcg_viewer.html?cardId=${encodeURIComponent(cardId)}`;
     }
 
+    function saveModalNote(value) {
+        if (!currentModalKey) return;
+        state[currentModalKey] = state[currentModalKey] || {};
+        state[currentModalKey].note = value;
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+    }
+
+    function populateModalNote(key) {
+        const noteInput = document.getElementById('modalNote');
+        if (!noteInput) return;
+        noteInput.value = (state[key] && typeof state[key].note === 'string') ? state[key].note : '';
+    }
+
     function openModal(key) {
         currentModalKey = key;
         const [sid, num] = key.split('-');
@@ -1576,6 +1608,7 @@
         }
         
         document.getElementById('priceData').innerHTML = buildModalPriceHtml(p, sourceUrl);
+        populateModalNote(key);
         document.getElementById('valueModal').style.display = 'flex';
     }
 
@@ -2353,6 +2386,7 @@
         }
         // Note: Removed currentCardId reference - element no longer in DOM
         document.getElementById('priceData').innerHTML = buildModalPriceHtml(p, sourceUrl);
+        populateModalNote(key);
         document.getElementById('valueModal').style.display = 'flex';
     }
 
@@ -2361,6 +2395,8 @@
         const f = { hideOwned: document.getElementById('hideOwned').checked, hidePending: document.getElementById('hidePending').checked, hideUnl: document.getElementById('hideUnl').checked, hide1st: document.getElementById('hide1st').checked, hideSdls: document.getElementById('hideSdls').checked };
         const searchTerm = (document.getElementById('nameSearch')?.value || '').trim().toLowerCase();
         document.getElementById('sizeSlider').value = state.settings.scale;
+        const isSetLayout = viewMode !== 'table' && viewMode !== 'print' && (state.settings.groupMode || 'pages') === 'sets';
+        app.classList.toggle('sets-layout', isSetLayout);
 
         function isCardVisible(sid, c) {
             const d = state[`${sid}-${c.num}`] || {};
@@ -2399,7 +2435,8 @@
                     const visibleCards = set.cards.filter(c => isCardVisible(sid, c));
                     if (visibleCards.length === 0) continue;
                     const pageWrapper = document.createElement('div');
-                    pageWrapper.className = `page-wrapper set-page`;
+                    const isSparseSet = visibleCards.length <= 3;
+                    pageWrapper.className = `page-wrapper set-page${isSparseSet ? ' set-page-sparse' : ''}`;
                     pageWrapper.innerHTML = `<div class="page-header" style="color:${set.color}; border-color:${set.color}">${set.name}</div><div class="binder-page"></div>`;
                     visibleCards.forEach(c => {
                         const key = `${sid}-${c.num}`, d = state[key] || {};
@@ -2420,7 +2457,7 @@
                             return { code: v, label: v.toUpperCase(), priceText: priceText };
                         });
                         const variantsHtml = variants.map(v => `<tr><td><input type="checkbox" ${d[v.code] ? 'checked' : ''} onchange="update('${key}', '${v.code}', this.checked)"> ${v.label}</td><td class="price-display">${v.priceText}</td><td class="price-col"><input type="number" class="price-input" value="${d[v.code+'Price'] || 0}" onchange="update('${key}', '${v.code+'Price'}', this.value)"></td></tr>`).join('');
-                        slot.innerHTML = `<img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"><div style="font-size:0.7rem">${c.num}</div><div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="update('${key}', 'pending', this.checked)"> Pending</div><table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Values</button>`;
+                        slot.innerHTML = `<img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"><div style="font-size:0.7rem">${c.num}</div><div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="update('${key}', 'pending', this.checked)"> Pending</div><table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
                         pageWrapper.querySelector('.binder-page').appendChild(slot);
                     });
                     app.appendChild(pageWrapper);
@@ -2451,7 +2488,7 @@
                                 return { code: v, label: v.toUpperCase(), priceText: priceText };
                             });
                             const variantsHtml = variants.map(v => `<tr><td><input type="checkbox" ${d[v.code] ? 'checked' : ''} onchange="update('${key}', '${v.code}', this.checked)"> ${v.label}</td><td class="price-display">${v.priceText}</td><td class="price-col"><input type="number" class="price-input" value="${d[v.code+'Price'] || 0}" onchange="update('${key}', '${v.code+'Price'}', this.value)"></td></tr>`).join('');
-                            slot.innerHTML = `<img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"><div style="font-size:0.7rem">${c.num}</div><div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="update('${key}', 'pending', this.checked)"> Pending</div><table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Values</button>`;
+                            slot.innerHTML = `<img class="thumb" src="https://images.pokemontcg.io/${set.src}/${c.num}.png"><div style="font-size:0.7rem">${c.num}</div><div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="update('${key}', 'pending', this.checked)"> Pending</div><table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
                             pageWrapper.querySelector('.binder-page').appendChild(slot);
                         });
                         app.appendChild(pageWrapper);

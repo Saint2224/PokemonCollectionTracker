@@ -225,6 +225,70 @@
         transform: translateX(120%);
         opacity: 0;
     }
+
+    .cart-header {
+        width: 100%;
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .cart-total { font-size: 1.2rem; font-weight: 700; color: #f1c40f; }
+    .cart-grid {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+    }
+    .cart-card {
+        background: #1c1c1c;
+        border: 1px solid #3a3a3a;
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .cart-card h4 { margin: 0; }
+    .cart-meta { font-size: 0.85rem; color: #bbb; }
+    .cart-variant-select {
+        width: 100%;
+        background: #2a2a2a;
+        color: #fff;
+        border: 1px solid #555;
+        border-radius: 8px;
+        padding: 6px 8px;
+    }
+    .cart-condition-group { margin-top: 4px; }
+    .cart-condition-title { font-size: 0.8rem; color: #ddd; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .cart-condition-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.88rem;
+        padding: 3px 0;
+    }
+    .cart-empty {
+        width: 100%;
+        background: #141414;
+        border: 1px dashed #444;
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        color: #bbb;
+    }
+
+    @media (max-width: 980px) {
+        .cart-header { padding: 12px; }
+        .cart-total { font-size: 1.05rem; }
+    }
 </style>
 </head>
 <body>
@@ -239,6 +303,7 @@
             <button onclick="toggleView('grid')">Binder View</button>
             <button onclick="toggleView('table')">Table View</button>
             <button onclick="toggleView('print')">Print View</button>
+            <button id="cartViewBtn" onclick="toggleView('cart')">Cart</button>
         </div>
         <div class="search-row">
             <input type="search" id="nameSearch" placeholder="Search card names (e.g. Charizard, Pikachu)" oninput="render()">
@@ -329,6 +394,7 @@
                 <button id="resolveIdBtn" onclick="resolveCardId()">Resolve Card ID</button>
                 <button id="refreshPricesBtn" onclick="refreshCardPrices()">Refresh API Prices</button>
                 <button id="updateMainPageBtn" onclick="updateMainPageValues(currentModalKey)" style="background:#2ecc71; color:#fff;">Update Value On Main Page</button>
+                <button onclick="addCardToCart(currentModalKey)">Add To Cart</button>
                 <button onclick="document.getElementById('valueModal').style.display='none'">Close</button>
             </div>
         </div>
@@ -648,19 +714,19 @@
     "rocket-82":  null,
     "rocket-83":  "pokemon-team-rocket-dark-raichu-secret-rare",
     "rocket-9":  "pokemon-team-rocket-dark-hypno-9-holo-rare",
-    "base2-1": null, "base2-2": null, "base2-3": null, "base2-4": null, "base2-5": null, "base2-6": null, "base2-7": null, "base2-8": null, "base2-9": null, "base2-10": null,
-    "base2-11": null, "base2-12": null, "base2-13": null, "base2-14": null, "base2-15": null, "base2-16": null, "base2-17": null, "base2-18": null, "base2-19": null, "base2-20": null,
-    "base2-21": null, "base2-22": null, "base2-23": null, "base2-24": null, "base2-25": null, "base2-26": null, "base2-27": null, "base2-28": null, "base2-29": null, "base2-30": null,
-    "base2-31": null, "base2-32": null, "base2-33": null, "base2-34": null, "base2-35": null, "base2-36": null, "base2-37": null, "base2-38": null, "base2-39": null, "base2-40": null,
-    "base2-41": null, "base2-42": null, "base2-43": null, "base2-44": null, "base2-45": null, "base2-46": null, "base2-47": null, "base2-48": null, "base2-49": null, "base2-50": null,
-    "base2-51": null, "base2-52": null, "base2-53": null, "base2-54": null, "base2-55": null, "base2-56": null, "base2-57": null, "base2-58": null, "base2-59": null, "base2-60": null,
-    "base2-61": null, "base2-62": null, "base2-63": null, "base2-64": null, "base2-65": null, "base2-66": null, "base2-67": null, "base2-68": null, "base2-69": null, "base2-70": null,
-    "base2-71": null, "base2-72": null, "base2-73": null, "base2-74": null, "base2-75": null, "base2-76": null, "base2-77": null, "base2-78": null, "base2-79": null, "base2-80": null,
-    "base2-81": null, "base2-82": null, "base2-83": null, "base2-84": null, "base2-85": null, "base2-86": null, "base2-87": null, "base2-88": null, "base2-89": null, "base2-90": null,
-    "base2-91": null, "base2-92": null, "base2-93": null, "base2-94": null, "base2-95": null, "base2-96": null, "base2-97": null, "base2-98": null, "base2-99": null, "base2-100": null,
-    "base2-101": null, "base2-102": null, "base2-103": null, "base2-104": null, "base2-105": null, "base2-106": null, "base2-107": null, "base2-108": null, "base2-109": null, "base2-110": null,
-    "base2-111": null, "base2-112": null, "base2-113": null, "base2-114": null, "base2-115": null, "base2-116": null, "base2-117": null, "base2-118": null, "base2-119": null, "base2-120": null,
-    "base2-121": null, "base2-122": null, "base2-123": null, "base2-124": null, "base2-125": null, "base2-126": null, "base2-127": null, "base2-128": null, "base2-129": null, "base2-130": null,
+    "base2-1": "pokemon-base-set-2-alakazam-holo-rare", "base2-2": "pokemon-base-set-2-blastoise-holo-rare", "base2-3": "pokemon-base-set-2-chansey-holo-rare", "base2-4": "pokemon-base-set-2-charizard-holo-rare", "base2-5": "pokemon-base-set-2-clefable-holo-rare", "base2-6": "pokemon-base-set-2-clefairy-holo-rare", "base2-7": "pokemon-base-set-2-gyarados-holo-rare", "base2-8": "pokemon-base-set-2-hitmonchan-holo-rare", "base2-9": "pokemon-base-set-2-magneton-holo-rare", "base2-10": "pokemon-base-set-2-mewtwo-holo-rare",
+    "base2-11": "pokemon-base-set-2-nidoking-holo-rare", "base2-12": "pokemon-base-set-2-nidoqueen-holo-rare", "base2-13": "pokemon-base-set-2-ninetales-holo-rare", "base2-14": "pokemon-base-set-2-pidgeot-holo-rare", "base2-15": "pokemon-base-set-2-poliwrath-holo-rare", "base2-16": "pokemon-base-set-2-raichu-holo-rare", "base2-17": "pokemon-base-set-2-scyther-holo-rare", "base2-18": "pokemon-base-set-2-venusaur-holo-rare", "base2-19": "pokemon-base-set-2-wigglytuff-holo-rare", "base2-20": "pokemon-base-set-2-zapdos-holo-rare",
+    "base2-21": "pokemon-base-set-2-beedrill-rare", "base2-22": "pokemon-base-set-2-dragonair-rare", "base2-23": "pokemon-base-set-2-dugtrio-rare", "base2-24": "pokemon-base-set-2-electabuzz-rare", "base2-25": "pokemon-base-set-2-electrode-rare", "base2-26": "pokemon-base-set-2-kangaskhan-rare", "base2-27": "pokemon-base-set-2-mr-mime-rare", "base2-28": "pokemon-base-set-2-pidgeotto-rare", "base2-29": "pokemon-base-set-2-pinsir-rare", "base2-30": "pokemon-base-set-2-snorlax-rare",
+    "base2-31": "pokemon-base-set-2-venomoth-rare", "base2-32": "pokemon-base-set-2-victreebel-rare", "base2-33": "pokemon-base-set-2-arcanine-uncommon", "base2-34": "pokemon-base-set-2-butterfree-uncommon", "base2-35": "pokemon-base-set-2-charmeleon-uncommon", "base2-36": "pokemon-base-set-2-dewgong-uncommon", "base2-37": "pokemon-base-set-2-dodrio-uncommon", "base2-38": "pokemon-base-set-2-dratini-uncommon", "base2-39": "pokemon-base-set-2-exeggutor-uncommon", "base2-40": "pokemon-base-set-2-farfetchd-uncommon",
+    "base2-41": "pokemon-base-set-2-fearow-uncommon", "base2-42": "pokemon-base-set-2-growlithe-uncommon", "base2-43": "pokemon-base-set-2-haunter-uncommon", "base2-44": "pokemon-base-set-2-ivysaur-uncommon", "base2-45": "pokemon-base-set-2-jynx-uncommon", "base2-46": "pokemon-base-set-2-kadabra-uncommon", "base2-47": "pokemon-base-set-2-kakuna-uncommon", "base2-48": "pokemon-base-set-2-lickitung-uncommon", "base2-49": "pokemon-base-set-2-machoke-uncommon", "base2-50": "pokemon-base-set-2-magikarp-uncommon",
+    "base2-51": "pokemon-base-set-2-magmar-uncommon", "base2-52": "pokemon-base-set-2-marowak-uncommon", "base2-53": "pokemon-base-set-2-nidorina-uncommon", "base2-54": "pokemon-base-set-2-nidorino-uncommon", "base2-55": "pokemon-base-set-2-parasect-uncommon", "base2-56": "pokemon-base-set-2-persian-uncommon", "base2-57": "pokemon-base-set-2-poliwhirl-uncommon", "base2-58": "pokemon-base-set-2-raticate-uncommon", "base2-59": "pokemon-base-set-2-rhydon-uncommon", "base2-60": "pokemon-base-set-2-seaking-uncommon",
+    "base2-61": "pokemon-base-set-2-seel-uncommon", "base2-62": "pokemon-base-set-2-tauros-uncommon", "base2-63": "pokemon-base-set-2-wartortle-uncommon", "base2-64": "pokemon-base-set-2-weepinbell-uncommon", "base2-65": "pokemon-base-set-2-abra-common", "base2-66": "pokemon-base-set-2-bellsprout-common", "base2-67": "pokemon-base-set-2-bulbasaur-common", "base2-68": "pokemon-base-set-2-caterpie-common", "base2-69": "pokemon-base-set-2-charmander-common", "base2-70": "pokemon-base-set-2-cubone-common",
+    "base2-71": "pokemon-base-set-2-diglett-common", "base2-72": "pokemon-base-set-2-doduo-common", "base2-73": "pokemon-base-set-2-drowzee-common", "base2-74": "pokemon-base-set-2-exeggcute-common", "base2-75": "pokemon-base-set-2-gastly-common", "base2-76": "pokemon-base-set-2-goldeen-common", "base2-77": "pokemon-base-set-2-jigglypuff-common", "base2-78": "pokemon-base-set-2-machop-common", "base2-79": "pokemon-base-set-2-magnemite-common", "base2-80": "pokemon-base-set-2-meowth-common",
+    "base2-81": "pokemon-base-set-2-metapod-common", "base2-82": "pokemon-base-set-2-nidoran-f-common", "base2-83": "pokemon-base-set-2-nidoran-m-common", "base2-84": "pokemon-base-set-2-onix-common", "base2-85": "pokemon-base-set-2-paras-common", "base2-86": "pokemon-base-set-2-pidgey-common", "base2-87": "pokemon-base-set-2-pikachu-common", "base2-88": "pokemon-base-set-2-poliwag-common", "base2-89": "pokemon-base-set-2-rattata-common", "base2-90": "pokemon-base-set-2-rhyhorn-common",
+    "base2-91": "pokemon-base-set-2-sandshrew-common", "base2-92": "pokemon-base-set-2-spearow-common", "base2-93": "pokemon-base-set-2-squirtle-common", "base2-94": "pokemon-base-set-2-starmie-common", "base2-95": "pokemon-base-set-2-staryu-common", "base2-96": "pokemon-base-set-2-tangela-common", "base2-97": "pokemon-base-set-2-venonat-common", "base2-98": "pokemon-base-set-2-voltorb-common", "base2-99": "pokemon-base-set-2-vulpix-common", "base2-100": "pokemon-base-set-2-weedle-common",
+    "base2-101": "pokemon-base-set-2-computer-search-rare", "base2-102": "pokemon-base-set-2-imposter-professor-oak-rare", "base2-103": "pokemon-base-set-2-item-finder-rare", "base2-104": "pokemon-base-set-2-lass-rare", "base2-105": "pokemon-base-set-2-pokemon-breeder-rare", "base2-106": "pokemon-base-set-2-pokemon-trader-rare", "base2-107": "pokemon-base-set-2-scoop-up-rare", "base2-108": "pokemon-base-set-2-super-energy-removal-rare", "base2-109": "pokemon-base-set-2-defender-uncommon", "base2-110": "pokemon-base-set-2-energy-retrieval-uncommon",
+    "base2-111": "pokemon-base-set-2-full-heal-uncommon", "base2-112": "pokemon-base-set-2-maintenance-uncommon", "base2-113": "pokemon-base-set-2-pluspower-uncommon", "base2-114": "pokemon-base-set-2-pokemon-center-uncommon", "base2-115": "pokemon-base-set-2-pokedex-uncommon", "base2-116": "pokemon-base-set-2-professor-oak-uncommon", "base2-117": "pokemon-base-set-2-super-potion-uncommon", "base2-118": "pokemon-base-set-2-bill-common", "base2-119": "pokemon-base-set-2-energy-removal-common", "base2-120": "pokemon-base-set-2-gust-of-wind-common",
+    "base2-121": "pokemon-base-set-2-poke-ball-common", "base2-122": "pokemon-base-set-2-potion-common", "base2-123": "pokemon-base-set-2-switch-common", "base2-124": "pokemon-base-set-2-double-colorless-energy-uncommon", "base2-125": null, "base2-126": null, "base2-127": null, "base2-128": null, "base2-129": null, "base2-130": null,
     "gymheroes-1": "pokemon-gym-heroes-blaine-s-moltres-holo-rare", "gymheroes-2": "pokemon-gym-heroes-brock-s-rhydon-holo-rare", "gymheroes-3": "pokemon-gym-heroes-erika-s-clefable-holo-rare", "gymheroes-4": "pokemon-gym-heroes-erika-s-dragonair-holo-rare", "gymheroes-5": "pokemon-gym-heroes-erika-s-vileplume-holo-rare", "gymheroes-6": "pokemon-gym-heroes-lt-surge-s-electabuzz-6-holo-rare", "gymheroes-7": "pokemon-gym-heroes-lt-surge-s-fearow-holo-rare", "gymheroes-8": "pokemon-gym-heroes-lt-surge-s-magneton-holo-rare", "gymheroes-9": "pokemon-gym-heroes-misty-s-seadra-holo-rare", "gymheroes-10": "pokemon-gym-heroes-misty-s-tentacruel-holo-rare",
     "gymheroes-11": "pokemon-gym-heroes-rocket-s-hitmonchan-holo-rare", "gymheroes-12": "pokemon-gym-heroes-rocket-s-moltres-holo-rare", "gymheroes-13": "pokemon-gym-heroes-rocket-s-scyther-holo-rare", "gymheroes-14": "pokemon-gym-heroes-sabrina-s-gengar-holo-rare", "gymheroes-15": "pokemon-gym-heroes-brock-15-holo-rare", "gymheroes-16": "pokemon-gym-heroes-erika-16-holo-rare", "gymheroes-17": "pokemon-gym-heroes-lt-surge-17-holo-rare", "gymheroes-18": "pokemon-gym-heroes-misty-18-holo-rare", "gymheroes-19": "pokemon-gym-heroes-the-rocket-s-trap-holo-rare", "gymheroes-20": "pokemon-gym-heroes-brock-s-golem-rare",
     "gymheroes-21": "pokemon-gym-heroes-brock-s-onix-21-rare", "gymheroes-22": "pokemon-gym-heroes-brock-s-rhyhorn-22-rare", "gymheroes-23": "pokemon-gym-heroes-brock-s-sandslash-rare", "gymheroes-24": "pokemon-gym-heroes-brock-s-zubat-24-rare", "gymheroes-25": "pokemon-gym-heroes-erika-s-clefairy-rare", "gymheroes-26": "pokemon-gym-heroes-erika-s-victreebel-rare", "gymheroes-27": "pokemon-gym-heroes-lt-surge-s-electabuzz-27-rare", "gymheroes-28": "pokemon-gym-heroes-lt-surge-s-raichu-rare", "gymheroes-29": "pokemon-gym-heroes-misty-s-cloyster-rare", "gymheroes-30": "pokemon-gym-heroes-misty-s-goldeen-30-rare",
@@ -714,6 +780,8 @@
     state.settings = state.settings || {};
     state.settings.groupMode = state.settings.groupMode || 'pages';
     state.settings.collapsedSections = state.settings.collapsedSections || getDefaultCollapsedSections();
+    state.settings.cart = Array.isArray(state.settings.cart) ? state.settings.cart : [];
+    state.settings.cartSelections = (state.settings.cartSelections && typeof state.settings.cartSelections === 'object') ? state.settings.cartSelections : {};
     let viewMode = 'grid';
     let hiddenSets = new Set();
     let currentModalKey = null;
@@ -784,6 +852,129 @@
         state.settings.collapsedSections[sectionKey] = !state.settings.collapsedSections[sectionKey];
         localStorage.setItem('master_tracker', JSON.stringify(state));
         applyCollapsedSectionState();
+    }
+
+    function ensureCartState() {
+        state.settings = state.settings || {};
+        state.settings.cart = Array.isArray(state.settings.cart) ? state.settings.cart : [];
+        state.settings.cartSelections = (state.settings.cartSelections && typeof state.settings.cartSelections === 'object') ? state.settings.cartSelections : {};
+    }
+
+    function updateCartButtonCount() {
+        ensureCartState();
+        const btn = document.getElementById('cartViewBtn');
+        if (!btn) return;
+        const count = state.settings.cart.length;
+        btn.textContent = count > 0 ? `Cart (${count})` : 'Cart';
+    }
+
+    function getCartVariantLabelsForKey(key, sid) {
+        const d = state[key] || {};
+        const buckets = d.versionBuckets || {};
+        const expected = getExpectedVersionLabelsForSet(sid);
+        const bucketLabels = [
+            ...expected.filter(label => Object.prototype.hasOwnProperty.call(buckets, label)),
+            ...Object.keys(buckets).filter(label => !expected.includes(label))
+        ];
+        if (bucketLabels.length) return bucketLabels;
+        if (d.prices) return ['Current'];
+        return [getDefaultVersionLabelForKey(key, sid)];
+    }
+
+    function getPriceStateForCartKey(key, variantLabel) {
+        const d = state[key] || {};
+        if (variantLabel && variantLabel !== 'Current' && d.versionBuckets && d.versionBuckets[variantLabel]?.prices) {
+            return d.versionBuckets[variantLabel].prices;
+        }
+        return d.prices || getDefaultPriceState();
+    }
+
+    function getCartSelectionForKey(key, sid) {
+        ensureCartState();
+        const labels = getCartVariantLabelsForKey(key, sid);
+        const fallbackVariant = labels[0] || 'Current';
+        const sel = state.settings.cartSelections[key] || {};
+        if (!sel.variantLabel || !labels.includes(sel.variantLabel)) {
+            sel.variantLabel = fallbackVariant;
+        }
+        sel.checks = (sel.checks && typeof sel.checks === 'object') ? sel.checks : {};
+        state.settings.cartSelections[key] = sel;
+        return sel;
+    }
+
+    function addCardToCart(key) {
+        if (!key) return;
+        ensureCartState();
+        if (!state.settings.cart.includes(key)) {
+            state.settings.cart.push(key);
+        }
+        const [sid] = key.split('-');
+        getCartSelectionForKey(key, sid);
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        updateCartButtonCount();
+        showToast('Card added to cart.');
+    }
+
+    function removeCardFromCart(key) {
+        ensureCartState();
+        state.settings.cart = state.settings.cart.filter(k => k !== key);
+        if (state.settings.cartSelections[key]) {
+            delete state.settings.cartSelections[key];
+        }
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        updateCartButtonCount();
+        render();
+    }
+
+    function clearCart() {
+        ensureCartState();
+        state.settings.cart = [];
+        state.settings.cartSelections = {};
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        updateCartButtonCount();
+        render();
+    }
+
+    function setCartVariant(key, variantLabel) {
+        const [sid] = key.split('-');
+        const sel = getCartSelectionForKey(key, sid);
+        sel.variantLabel = variantLabel;
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        render();
+    }
+
+    function toggleCartCondition(key, conditionKey, checked) {
+        const [sid] = key.split('-');
+        const sel = getCartSelectionForKey(key, sid);
+        sel.checks[conditionKey] = !!checked;
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        render();
+    }
+
+    function formatMoney(value) {
+        return (typeof value === 'number' && Number.isFinite(value)) ? `$${value.toFixed(2)}` : 'N/A';
+    }
+
+    function getCartTotal() {
+        ensureCartState();
+        let total = 0;
+        state.settings.cart.forEach(key => {
+            const [sid] = key.split('-');
+            const sel = getCartSelectionForKey(key, sid);
+            const p = getPriceStateForCartKey(key, sel.variantLabel);
+            const rawKeys = ['nm', 'lp', 'mp', 'hp', 'dmg'];
+            rawKeys.forEach(rk => {
+                if (!sel.checks[`raw:${rk}`]) return;
+                const v = p.raw?.[rk];
+                if (typeof v === 'number' && Number.isFinite(v)) total += v;
+            });
+            ['6', '7', '8', '9', '10'].forEach(g => {
+                if (!sel.checks[`psa:${g}`]) return;
+                const v = p.psa?.[g];
+                if (typeof v === 'number' && Number.isFinite(v)) total += v;
+            });
+        });
+        return total;
     }
 
     function ensureToastContainer() {
@@ -2483,6 +2674,7 @@
 
     function render() {
         const app = document.getElementById('app');
+        updateCartButtonCount();
         const f = { hideOwned: document.getElementById('hideOwned').checked, hidePending: document.getElementById('hidePending').checked, hideUnl: document.getElementById('hideUnl').checked, hide1st: document.getElementById('hide1st').checked, hideSdls: document.getElementById('hideSdls').checked };
         const searchTerm = (document.getElementById('nameSearch')?.value || '').trim().toLowerCase();
         document.getElementById('sizeSlider').value = state.settings.scale;
@@ -2535,7 +2727,73 @@
         }
 
         app.innerHTML = '';
-        if (viewMode === 'table') {
+        if (viewMode === 'cart') {
+            ensureCartState();
+            const total = getCartTotal();
+            const cartKeys = state.settings.cart.filter(key => {
+                const [sid, num] = key.split('-');
+                return !!sets[sid] && sets[sid].cards.some(c => String(c.num) === String(num));
+            });
+
+            const header = document.createElement('div');
+            header.className = 'cart-header';
+            header.innerHTML = `<div class="cart-total">Cart Total: $${total.toFixed(2)}</div><button onclick="clearCart()">Clear Cart</button>`;
+            app.appendChild(header);
+
+            if (!cartKeys.length) {
+                app.innerHTML += `<div class="cart-empty">Your cart is empty. Open a card and use Add To Cart in More Options.</div>`;
+                return;
+            }
+
+            const grid = document.createElement('div');
+            grid.className = 'cart-grid';
+
+            cartKeys.forEach(key => {
+                const [sid, num] = key.split('-');
+                const set = sets[sid];
+                const card = set.cards.find(c => String(c.num) === String(num));
+                if (!card) return;
+                const selection = getCartSelectionForKey(key, sid);
+                const variantLabels = getCartVariantLabelsForKey(key, sid);
+                const currentPrice = getPriceStateForCartKey(key, selection.variantLabel);
+
+                const variantOptions = variantLabels.map(label => `<option value="${label}" ${selection.variantLabel === label ? 'selected' : ''}>${label}</option>`).join('');
+                const rawRows = [
+                    ['nm', 'NM'], ['lp', 'LP'], ['mp', 'MP'], ['hp', 'HP'], ['dmg', 'DMG']
+                ].map(([rk, lbl]) => {
+                    const ckey = `raw:${rk}`;
+                    return `<label class="cart-condition-row"><input type="checkbox" ${selection.checks[ckey] ? 'checked' : ''} onchange="toggleCartCondition('${key}','${ckey}',this.checked)"><span>${lbl}</span><span>${formatMoney(currentPrice.raw?.[rk])}</span></label>`;
+                }).join('');
+                const psaRows = ['10', '9', '8', '7', '6'].map(grade => {
+                    const ckey = `psa:${grade}`;
+                    return `<label class="cart-condition-row"><input type="checkbox" ${selection.checks[ckey] ? 'checked' : ''} onchange="toggleCartCondition('${key}','${ckey}',this.checked)"><span>PSA ${grade}</span><span>${formatMoney(currentPrice.psa?.[grade])}</span></label>`;
+                }).join('');
+
+                const cardEl = document.createElement('div');
+                cardEl.className = 'cart-card';
+                cardEl.innerHTML = `
+                    <img class="thumb" src="https://images.pokemontcg.io/${set.src}/${card.num}.png" style="max-width:220px; margin:0 auto;">
+                    <h4>${card.name}</h4>
+                    <div class="cart-meta">${set.name} - ${card.num}</div>
+                    <div>
+                        <div class="cart-condition-title">Variant</div>
+                        <select class="cart-variant-select" onchange="setCartVariant('${key}', this.value)">${variantOptions}</select>
+                    </div>
+                    <div class="cart-condition-group">
+                        <div class="cart-condition-title">Raw</div>
+                        ${rawRows}
+                    </div>
+                    <div class="cart-condition-group">
+                        <div class="cart-condition-title">Graded</div>
+                        ${psaRows}
+                    </div>
+                    <button onclick="removeCardFromCart('${key}')">Remove Card</button>
+                `;
+                grid.appendChild(cardEl);
+            });
+
+            app.appendChild(grid);
+        } else if (viewMode === 'table') {
             let html = `<table id="binderTable"><tr><th>Set</th><th>Num</th><th>IMG</th><th>Name</th><th>Pending</th><th>Owned</th></tr>`;
             for (const [sid, set] of Object.entries(sets)) {
                 if (hiddenSets.has(sid)) continue;
@@ -2681,6 +2939,7 @@
     loadSavedApiKey();
     loadSavedJustTcgMap();
     applyCollapsedSectionState();
+    updateCartButtonCount();
     // initialize grouping UI to saved state
     if (document.getElementById('groupPages')) document.getElementById('groupPages').checked = state.settings.groupMode === 'pages';
     if (document.getElementById('groupSets')) document.getElementById('groupSets').checked = state.settings.groupMode === 'sets';

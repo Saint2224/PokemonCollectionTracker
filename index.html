@@ -22,7 +22,26 @@
         border-radius: 6px;
     }
     .header-container { display: flex; gap: 40px; justify-content: center; }
-    .header-col { flex: 1; max-width: 400px; }
+    .header-col { flex: 1; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
+    .section-card { background: #1c1c1c; border: 1px solid #333; border-radius: 10px; padding: 10px; }
+    .collapse-toggle {
+        width: 100%;
+        background: #2a2a2a;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .collapse-toggle .chevron { transition: transform 0.2s ease; }
+    .section-card.collapsed .collapse-toggle .chevron { transform: rotate(-90deg); }
+    .collapsible-body { margin-top: 10px; }
+    .section-card.collapsed .collapsible-body { display: none; }
     .type-controls { display: flex; flex-direction: column; gap: 6px; }
     .top-controls-row { display: flex; gap: 16px; align-items: flex-start; }
     .slider-panel { flex: 0 0 220px; }
@@ -111,6 +130,12 @@
     body.table-mode #hideSdls { display: none !important; }
     body.table-mode #jtcgGen { display: none !important; }
     body.table-mode .header-col:last-of-type > div { display: none !important; }
+    body.table-mode #cardTypeSection { display: block !important; }
+    body.table-mode #cardTypeBody { display: block !important; }
+    body.table-mode #cardTypeBody .filters-panel { display: none !important; }
+    body.table-mode #cardTypeBody .top-controls-row { display: block !important; }
+    body.table-mode #cardTypeSection .collapse-toggle { display: none !important; }
+    body.table-mode #apiSection { display: none !important; }
     body.table-mode #sizeSlider { display: inline-block !important; }
     body.table-mode .header-col:last-of-type > div:has(#sizeSlider) { display: block !important; }
     body.table-mode #binderTable { margin-top: 20px; }
@@ -123,6 +148,7 @@
         .filters-panel { order: 2; }
         .filters-panel label { display: block; }
         .api-panel > div[style*="display:flex"] { flex-wrap: wrap; }
+        .collapse-toggle { font-size: 0.95rem; }
     }
 
     @page { margin: 0.25in; padding: 0; }
@@ -139,10 +165,10 @@
         body.print-mode .actions-center button { display: none; }
     }
 
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
-    .modal-content { background: #222; padding: 30px; border-radius: 12px; width: 800px; display: flex; gap: 30px; border: 1px solid #444; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+    .modal-content { background: #222; padding: 30px; border-radius: 12px; width: min(800px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; display: flex; gap: 30px; border: 1px solid #444; box-sizing: border-box; }
     .modal-left { flex: 1; text-align: center; }
-    .modal-right { flex: 2; }
+    .modal-right { flex: 2; min-width: 0; }
     .val-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .note-field { margin-top: 14px; }
     .note-field textarea {
@@ -159,6 +185,11 @@
     .loading-row { display: none; align-items: center; gap: 10px; margin: 8px 0 12px 0; color: #b7d6ff; font-size: 0.9rem; }
     .spinner { width: 14px; height: 14px; border: 2px solid #35506e; border-top-color: #4da3ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    @media (max-width: 980px) {
+        .modal { padding: 10px; }
+        .modal-content { width: 100%; max-height: calc(100vh - 20px); padding: 18px; gap: 16px; flex-direction: column; }
+    }
 
     .toast-container {
         position: fixed;
@@ -215,47 +246,66 @@
     </div>
     <div class="header-container">
         <div class="header-col">
-            <h3>Card Sets</h3>
-            <div id="setTrackers"></div>
-            <div style="margin-top:8px; font-size:0.9rem; color:#ccc;">
-                <label style="margin-right:8px;">Group:</label>
-                <label><input type="radio" name="groupMode" id="groupPages" value="pages" onchange="setGrouping('pages')"> Pages</label>
-                <label style="margin-left:8px;"><input type="radio" name="groupMode" id="groupSets" value="sets" onchange="setGrouping('sets')"> Sets</label>
+            <div class="section-card" id="cardSetsSection">
+                <button type="button" class="collapse-toggle" data-section-toggle="cardSets" onclick="toggleSectionCollapse('cardSets')" aria-expanded="true" aria-controls="cardSetsBody">
+                    <span>Card Sets</span>
+                    <span class="chevron">▾</span>
+                </button>
+                <div class="collapsible-body" id="cardSetsBody">
+                    <div id="setTrackers"></div>
+                    <div style="margin-top:8px; font-size:0.9rem; color:#ccc;">
+                        <label style="margin-right:8px;">Group:</label>
+                        <label><input type="radio" name="groupMode" id="groupPages" value="pages" onchange="setGrouping('pages')"> Pages</label>
+                        <label style="margin-left:8px;"><input type="radio" name="groupMode" id="groupSets" value="sets" onchange="setGrouping('sets')"> Sets</label>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="header-col">
-            <h3>Card Type</h3>
-            <div class="top-controls-row">
-                <div class="slider-panel">
-                    <label>Thumbnail/Card Scale</label><br>
-                    <input type="range" id="sizeSlider" min="0.4" max="2.0" step="0.05" value="1.2" oninput="updateScale(this.value)">
-                </div>
-                <div class="filters-panel type-controls">
-                    <label><input type="checkbox" id="hideOwned" onchange="render()"> Hide Owned</label>
-                    <label><input type="checkbox" id="hidePending" onchange="render()"> Hide Pending</label>
-                    <label><input type="checkbox" id="hideUnl" onchange="render()"> Hide Unl</label>
-                    <label><input type="checkbox" id="hide1st" onchange="render()"> Hide 1st</label>
-                    <label><input type="checkbox" id="hideSdls" onchange="render()"> Hide SDLS</label>
-                    <label style="display:block; margin-top:10px; color:#f1c40f;"><input type="checkbox" id="hideValues" onchange="toggleValues(this.checked)"> Hide Values</label>
+            <div class="section-card" id="cardTypeSection">
+                <button type="button" class="collapse-toggle" data-section-toggle="cardType" onclick="toggleSectionCollapse('cardType')" aria-expanded="true" aria-controls="cardTypeBody">
+                    <span>Card Type</span>
+                    <span class="chevron">▾</span>
+                </button>
+                <div class="collapsible-body" id="cardTypeBody">
+                    <div class="top-controls-row">
+                        <div class="slider-panel">
+                            <label>Thumbnail/Card Scale</label><br>
+                            <input type="range" id="sizeSlider" min="0.4" max="2.0" step="0.05" value="1.2" oninput="updateScale(this.value)">
+                        </div>
+                        <div class="filters-panel type-controls">
+                            <label><input type="checkbox" id="hideOwned" onchange="render()"> Hide Owned</label>
+                            <label><input type="checkbox" id="hidePending" onchange="render()"> Hide Pending</label>
+                            <label><input type="checkbox" id="hideUnl" onchange="render()"> Hide Unl</label>
+                            <label><input type="checkbox" id="hide1st" onchange="render()"> Hide 1st</label>
+                            <label><input type="checkbox" id="hideSdls" onchange="render()"> Hide SDLS</label>
+                            <label style="display:block; margin-top:10px; color:#f1c40f;"><input type="checkbox" id="hideValues" onchange="toggleValues(this.checked)"> Hide Values</label>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="api-panel">
-                <label style="display:block; margin-bottom:5px;">TCG API Key</label>
-                <input type="text" id="apiKey" style="width:100%; padding:6px; background:#333; color:#fff; border:1px solid #555;" placeholder="Paste your JustTCG API key here">
-                <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
-                    <button onclick="saveApiKey()">Save API Key</button>
-                    <button onclick="testJustTcgApiKey()">Test API Key</button>
-                    <button id="generateIdsBtn" onclick="startGenerateJustTcgMap()">Generate JUSTTCG ID Map</button>
-                    <button id="resumeMapBtn" style="display:none" onclick="startGenerateJustTcgMap()">Resume Mapping</button>
-                    <button id="downloadMapBtn" style="display:none" onclick="downloadJustTcgMap()">Download Map</button>
-                    <button id="copyMapBtn" style="display:none" onclick="copyJustTcgMap()">Copy Map</button>
+            <div class="section-card" id="apiSection">
+                <button type="button" class="collapse-toggle" data-section-toggle="apiKey" onclick="toggleSectionCollapse('apiKey')" aria-expanded="true" aria-controls="apiBody">
+                    <span>TCG API Key</span>
+                    <span class="chevron">▾</span>
+                </button>
+                <div class="collapsible-body api-panel" id="apiBody">
+                    <input type="text" id="apiKey" style="width:100%; padding:6px; background:#333; color:#fff; border:1px solid #555;" placeholder="Paste your JustTCG API key here">
+                    <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+                        <button onclick="saveApiKey()">Save API Key</button>
+                        <button onclick="testJustTcgApiKey()">Test API Key</button>
+                        <button id="generateIdsBtn" onclick="startGenerateJustTcgMap()">Generate JUSTTCG ID Map</button>
+                        <button id="resumeMapBtn" style="display:none" onclick="startGenerateJustTcgMap()">Resume Mapping</button>
+                        <button id="downloadMapBtn" style="display:none" onclick="downloadJustTcgMap()">Download Map</button>
+                        <button id="copyMapBtn" style="display:none" onclick="copyJustTcgMap()">Copy Map</button>
+                    </div>
+                    <div id="jtcgGen" style="margin-top:8px; font-size:0.8rem; color:#ccc;">
+                        <div id="jtcgKeyStatus"></div>
+                        <div id="jtcgStatus"></div>
+                        <pre id="jtcgProgress" style="max-height:180px; overflow:auto; background:#111; padding:8px; border:1px solid #333; display:none;"></pre>
+                    </div>
+                    <div style="font-size:0.8rem; color:#ccc; margin-top:8px;">Use a JustTCG API key to fetch latest pricing. Without a key, the page can still search card variants but may not return prices. The generator will run from your browser and produce a JSON map you can download and paste into the script.</div>
                 </div>
-                <div id="jtcgGen" style="margin-top:8px; font-size:0.8rem; color:#ccc;">
-                    <div id="jtcgKeyStatus"></div>
-                    <div id="jtcgStatus"></div>
-                    <pre id="jtcgProgress" style="max-height:180px; overflow:auto; background:#111; padding:8px; border:1px solid #333; display:none;"></pre>
-                </div>
-                <div style="font-size:0.8rem; color:#ccc; margin-top:8px;">Use a JustTCG API key to fetch latest pricing. Without a key, the page can still search card variants but may not return prices. The generator will run from your browser and produce a JSON map you can download and paste into the script.</div>
             </div>
         </div>
     </div>
@@ -663,6 +713,7 @@
     // ensure grouping mode default
     state.settings = state.settings || {};
     state.settings.groupMode = state.settings.groupMode || 'pages';
+    state.settings.collapsedSections = state.settings.collapsedSections || getDefaultCollapsedSections();
     let viewMode = 'grid';
     let hiddenSets = new Set();
     let currentModalKey = null;
@@ -701,6 +752,39 @@
     }
     function toggleSet(sid, hidden) { hidden ? hiddenSets.add(sid) : hiddenSets.delete(sid); render(); }
     function toggleValues(hidden) { document.body.classList.toggle('hide-values', hidden); }
+
+    function getDefaultCollapsedSections() {
+        const isSmallScreen = window.matchMedia('(max-width: 980px)').matches;
+        return {
+            cardSets: isSmallScreen,
+            cardType: isSmallScreen,
+            apiKey: isSmallScreen
+        };
+    }
+
+    function applyCollapsedSectionState() {
+        const sectionMap = {
+            cardSets: 'cardSetsSection',
+            cardType: 'cardTypeSection',
+            apiKey: 'apiSection'
+        };
+        const collapsed = state.settings.collapsedSections || {};
+        Object.entries(sectionMap).forEach(([key, sectionId]) => {
+            const section = document.getElementById(sectionId);
+            const toggle = document.querySelector(`[data-section-toggle="${key}"]`);
+            if (!section || !toggle) return;
+            const isCollapsed = !!collapsed[key];
+            section.classList.toggle('collapsed', isCollapsed);
+            toggle.setAttribute('aria-expanded', String(!isCollapsed));
+        });
+    }
+
+    function toggleSectionCollapse(sectionKey) {
+        state.settings.collapsedSections = state.settings.collapsedSections || getDefaultCollapsedSections();
+        state.settings.collapsedSections[sectionKey] = !state.settings.collapsedSections[sectionKey];
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        applyCollapsedSectionState();
+    }
 
     function ensureToastContainer() {
         let container = document.getElementById('toastContainer');
@@ -2596,6 +2680,7 @@
     
     loadSavedApiKey();
     loadSavedJustTcgMap();
+    applyCollapsedSectionState();
     // initialize grouping UI to saved state
     if (document.getElementById('groupPages')) document.getElementById('groupPages').checked = state.settings.groupMode === 'pages';
     if (document.getElementById('groupSets')) document.getElementById('groupSets').checked = state.settings.groupMode === 'sets';

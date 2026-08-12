@@ -1,0 +1,14 @@
+{
+  "chaosrising": {
+    "links_collected": 50,
+    "mapped": 28,
+    "min_num": 87,
+    "max_num": 122
+  },
+  "pitchblack": {
+    "links_collected": 50,
+    "mapped": 27,
+    "min_num": 85,
+    "max_num": 120
+  }
+}

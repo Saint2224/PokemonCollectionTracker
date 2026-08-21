@@ -169,7 +169,67 @@
     .modal-content { background: #222; padding: 30px; border-radius: 12px; width: min(800px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; display: flex; gap: 30px; border: 1px solid #444; box-sizing: border-box; }
     .modal-left { flex: 1; text-align: center; }
     .modal-right { flex: 2; min-width: 0; }
+    .modal-wide .modal-content { width: min(920px, 100%); }
+    .modal-card-preview {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+    .modal-card-preview img {
+        width: 88px;
+        height: auto;
+        border-radius: 8px;
+        border: 1px solid #555;
+        background: #111;
+        flex: 0 0 auto;
+    }
+    .modal-card-preview .modal-card-meta {
+        min-width: 0;
+        text-align: left;
+    }
+    .modal-card-preview .card-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.2;
+    }
+    .modal-card-preview .card-number {
+        font-size: 0.85rem;
+        color: #9ecbff;
+        margin-top: 4px;
+    }
     .val-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .inventory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 12px; }
+    .inventory-tile, .condition-tile {
+        background: #1a1a1a;
+        border: 1px solid #444;
+        border-radius: 10px;
+        padding: 10px;
+    }
+    .inventory-tile.unknown {
+        background: #2b1c3a;
+        border-color: #9b59b6;
+    }
+    .inventory-tile h4, .condition-tile h4 { margin: 0 0 6px 0; }
+    .inventory-count { font-size: 1.15rem; font-weight: 700; color: #f1c40f; }
+    .quantity-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 72px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #24384d;
+        color: #d8ebff;
+        font-weight: 700;
+        margin-top: 6px;
+    }
+    .quantity-pill.zero { background: #3b2d17; color: #ffe6aa; }
+    .quantity-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; }
+    .quantity-row button { min-width: 34px; }
+    .condition-choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
+    .condition-choice-grid button { padding: 12px 10px; }
     .note-field { margin-top: 14px; }
     .note-field textarea {
         width: 100%;
@@ -394,9 +454,30 @@
                 <button id="resolveIdBtn" onclick="resolveCardId()">Resolve Card ID</button>
                 <button id="refreshPricesBtn" onclick="refreshCardPrices()">Refresh API Prices</button>
                 <button id="updateMainPageBtn" onclick="updateMainPageValues(currentModalKey)" style="background:#2ecc71; color:#fff;">Update Value On Main Page</button>
+                <button onclick="openInventoryModal(currentModalKey)">Adjust Qty</button>
                 <button onclick="addCardToCart(currentModalKey)">Add To Cart</button>
                 <button onclick="document.getElementById('valueModal').style.display='none'">Close</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="conditionModal" class="modal modal-wide">
+    <div class="modal-content" style="display:block;">
+        <h3 id="conditionModalTitle" style="margin-top:0;">Select Condition</h3>
+        <div id="conditionModalBody"></div>
+        <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <button onclick="closeConditionModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="inventoryModal" class="modal modal-wide">
+    <div class="modal-content" style="display:block;">
+        <h3 id="inventoryModalTitle" style="margin-top:0;">Inventory</h3>
+        <div id="inventoryModalBody"></div>
+        <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <button onclick="closeInventoryModal()">Close</button>
         </div>
     </div>
 </div>
@@ -1067,6 +1148,18 @@
     let hiddenSets = new Set();
     let currentModalKey = null;
     let currentResolvedCardId = null;
+    let currentConditionModalKey = null;
+    let currentConditionModalMode = 'add';
+    let currentInventoryModalKey = null;
+
+    const INVENTORY_CONDITIONS = [
+        ['nm', 'NM'],
+        ['lp', 'LP'],
+        ['mp', 'MP'],
+        ['hp', 'HP'],
+        ['dmg', 'DMG'],
+        ['unknown', 'Unknown']
+    ];
 
     function getCardNumToken(card) {
         if (card && card.keyNum != null) return String(card.keyNum);
@@ -1097,6 +1190,202 @@
     function getCardNumberDisplay(card) {
         const numberText = String(card?.num ?? '');
         return card?.variantLabel ? `${numberText} (${card.variantLabel})` : numberText;
+    }
+
+    function ensureInventoryState(key) {
+        state[key] = state[key] || {};
+        const entry = state[key];
+        entry.inventory = entry.inventory && typeof entry.inventory === 'object' ? entry.inventory : {};
+        INVENTORY_CONDITIONS.forEach(([cond]) => {
+            if (!Number.isFinite(entry.inventory[cond])) entry.inventory[cond] = 0;
+        });
+        return entry.inventory;
+    }
+
+    function getInventoryCount(key, condition = null) {
+        const inventory = ensureInventoryState(key);
+        if (condition) return Number(inventory[condition]) || 0;
+        return INVENTORY_CONDITIONS.reduce((sum, [cond]) => sum + (Number(inventory[cond]) || 0), 0);
+    }
+
+    function getEffectiveCardQty(key) {
+        const entry = state[key] || {};
+        const inventoryCount = getInventoryCount(key);
+        const hasVariantFlags = ['unl', '1st', 'sdls', 'err', 'fp'].some(flag => entry[flag] === true);
+        return Math.max(inventoryCount, hasVariantFlags ? 1 : 0);
+    }
+
+    function syncCardOwnershipFlags(key) {
+        const entry = state[key] || {};
+        entry.owned = getEffectiveCardQty(key) > 0;
+        entry.pending = entry.owned ? false : !!entry.pending;
+    }
+
+    function hydrateTrackerState() {
+        Object.keys(state).forEach(key => {
+            if (key === 'settings') return;
+            ensureInventoryState(key);
+            const entry = state[key] || {};
+            const total = getInventoryCount(key);
+            const hasLegacyOwnedSignal = !!entry.owned || ['unl', '1st', 'sdls', 'err', 'fp'].some(flag => entry[flag] === true);
+            if (total === 0 && hasLegacyOwnedSignal) {
+                entry.inventory.unknown = Math.max(1, Number(entry.inventory.unknown) || 0);
+            }
+            syncCardOwnershipFlags(key);
+        });
+    }
+
+    function adjustInventoryByCondition(key, condition, delta) {
+        if (!condition || !delta) return;
+        const inventory = ensureInventoryState(key);
+        inventory[condition] = Math.max(0, (Number(inventory[condition]) || 0) + delta);
+        const entry = state[key] || {};
+        entry.pending = false;
+        syncCardOwnershipFlags(key);
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        render();
+        refreshValueModalQty(key);
+        openInventoryModal(key);
+    }
+
+    function addCardInventoryByCondition(key, condition) {
+        if (!condition) return;
+        const inventory = ensureInventoryState(key);
+        inventory[condition] = Math.max(0, (Number(inventory[condition]) || 0) + 1);
+        const entry = state[key] || {};
+        entry.pending = false;
+        syncCardOwnershipFlags(key);
+        localStorage.setItem('master_tracker', JSON.stringify(state));
+        render();
+        refreshValueModalQty(key);
+    }
+
+    function refreshValueModalQty(key) {
+        if (currentModalKey !== key) return;
+        const valueModal = document.getElementById('valueModal');
+        if (!valueModal || valueModal.style.display !== 'flex') return;
+        openModal(key);
+    }
+
+    function handleOwnedCheckboxToggle(key, checked, checkboxEl) {
+        if (checkboxEl) checkboxEl.checked = false;
+        openInventoryModal(key);
+    }
+
+    function openConditionModal(key, mode = 'add') {
+        closeInventoryModal();
+        currentConditionModalKey = key;
+        currentConditionModalMode = mode;
+        const card = findCardByStateKey(parseCardStateKey(key).sid, key);
+        const inventory = ensureInventoryState(key);
+        const title = document.getElementById('conditionModalTitle');
+        const body = document.getElementById('conditionModalBody');
+        if (title) title.textContent = `${card?.name || 'Card'} Inventory`;
+        if (body) {
+            const prompt = mode === 'add'
+                ? 'Choose the condition for the copy you are adding.'
+                : 'Choose the condition to decrement.';
+            const showCondition = ([cond, label]) => {
+                const count = Number(inventory[cond]) || 0;
+                if (cond === 'unknown' && count === 0) return '';
+                const disabled = mode === 'remove' && count === 0;
+                const style = [
+                    cond === 'unknown' ? 'background:#3b2459; border-color:#9b59b6; color:#f3d9ff;' : '',
+                    disabled ? 'opacity:0.45; cursor:not-allowed;' : ''
+                ].filter(Boolean).join(' ');
+                const extra = mode === 'remove' ? ` <span style="color:#bbb; font-size:0.85rem;">(${count})</span>` : '';
+                return `<button ${disabled ? 'disabled' : ''} style="${style}" onclick="confirmConditionSelection('${cond}')">${label}${extra}</button>`;
+            };
+            body.innerHTML = `
+                ${buildModalCardPreviewHtml(card, parseCardStateKey(key).sid)}
+                <div style="color:#ccc; margin-bottom:10px;">${prompt}</div>
+                <div class="condition-choice-grid">
+                    ${INVENTORY_CONDITIONS.map(showCondition).join('')}
+                </div>
+            `;
+        }
+        document.getElementById('conditionModal').style.display = 'flex';
+    }
+
+    function closeConditionModal() {
+        currentConditionModalKey = null;
+        document.getElementById('conditionModal').style.display = 'none';
+    }
+
+    function confirmConditionSelection(condition) {
+        if (!currentConditionModalKey) return;
+        if ((currentConditionModalMode || 'add') === 'remove') {
+            adjustInventoryByCondition(currentConditionModalKey, condition, -1);
+        } else {
+            addCardInventoryByCondition(currentConditionModalKey, condition);
+        }
+        closeConditionModal();
+    }
+
+    function buildModalCardPreviewHtml(card, sid) {
+        if (!card) return '';
+        return `
+            <div class="modal-card-preview">
+                <img src="${getCardThumbUrl(sid, card)}" alt="${card.name}">
+                <div class="modal-card-meta">
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-number">#${getCardNumberDisplay(card)}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function refreshInventoryModal(key) {
+        if (currentInventoryModalKey !== key) return;
+        const modal = document.getElementById('inventoryModal');
+        if (!modal || modal.style.display !== 'flex') return;
+        const parsed = parseCardStateKey(key);
+        const card = findCardByStateKey(parsed.sid, key);
+        const inventory = ensureInventoryState(key);
+        const total = getInventoryCount(key);
+        const title = document.getElementById('inventoryModalTitle');
+        const body = document.getElementById('inventoryModalBody');
+        if (title) title.textContent = `${card?.name || 'Card'} Inventory`;
+        if (body) {
+            const rows = INVENTORY_CONDITIONS.map(([cond, label]) => {
+                const count = Number(inventory[cond]) || 0;
+                if (cond === 'unknown' && count === 0) return '';
+                const isUnknown = cond === 'unknown';
+                return `
+                    <div class="inventory-tile${isUnknown ? ' unknown' : ''}">
+                        <h4>${label}</h4>
+                        <div class="inventory-count">${count}</div>
+                        <div class="quantity-row">
+                            <button onclick="adjustInventoryByCondition('${key}','${cond}',-1)">-</button>
+                            <button onclick="adjustInventoryByCondition('${key}','${cond}',1)">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            body.innerHTML = `
+                ${buildModalCardPreviewHtml(card, parsed.sid)}
+                <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <div>
+                        <div style="font-size:0.9rem; color:#bbb;">${card?.name || 'Card'} #${getCardNumberDisplay(card)}</div>
+                        <div class="quantity-pill${total === 0 ? ' zero' : ''}">Total Qty: ${total}</div>
+                    </div>
+                    <div style="font-size:0.85rem; color:#9ecbff;">Condition breakdown</div>
+                </div>
+                <div class="inventory-grid">${rows}</div>
+            `;
+        }
+    }
+
+    function openInventoryModal(key) {
+        closeConditionModal();
+        currentInventoryModalKey = key;
+        document.getElementById('inventoryModal').style.display = 'flex';
+        refreshInventoryModal(key);
+    }
+
+    function closeInventoryModal() {
+        currentInventoryModalKey = null;
+        document.getElementById('inventoryModal').style.display = 'none';
     }
 
     const initialScale = state.settings.scale || 1.2;
@@ -2226,10 +2515,12 @@
         localStorage.setItem('master_tracker', JSON.stringify(state));
         
         // Update the card ID display in the modal
+        const currentQty = getEffectiveCardQty(key);
         document.getElementById('modalLeft').innerHTML = `
             <img src="${getCardLargeUrl(sid, card)}" style="width:200px">
             <h4>${card.name}</h4>
             <div style="font-size:0.8rem; color:#9ecbff; margin-top:4px;">#${getCardNumberDisplay(card)}</div>
+            <div class="quantity-pill${currentQty === 0 ? ' zero' : ''}" style="margin:10px auto 0 auto; width:max-content;">Total Qty: ${currentQty}</div>
             <div style="margin-top:8px; font-size:0.85rem; color:#ccc;" id="modalCardIdDisplay"></div>
         `;
         
@@ -2246,6 +2537,17 @@
         }
         
         document.getElementById('priceData').innerHTML = buildModalPriceHtml(p, sourceUrl);
+        const actionRow = document.querySelector('#valueModal .modal-right > div:last-of-type');
+        if (actionRow) {
+            actionRow.innerHTML = `
+                <button id="resolveIdBtn" onclick="resolveCardId()">Resolve Card ID</button>
+                <button id="refreshPricesBtn" onclick="refreshCardPrices()">Refresh API Prices</button>
+                <button id="updateMainPageBtn" onclick="updateMainPageValues(currentModalKey)" style="background:#2ecc71; color:#fff;">Update Value On Main Page</button>
+                <button onclick="openInventoryModal(currentModalKey)">Adjust Qty</button>
+                <button onclick="addCardToCart(currentModalKey)">Add To Cart</button>
+                <button onclick="document.getElementById('valueModal').style.display='none'">Close</button>
+            `;
+        }
         populateModalNote(key);
         document.getElementById('valueModal').style.display = 'flex';
     }
@@ -3007,10 +3309,13 @@
         const sourceUrl = getJustTcgSourceUrl(currentResolvedCardId);
         renderVersionPills(key);
 
+        const currentQty = getEffectiveCardQty(key);
+
         document.getElementById('modalLeft').innerHTML = `
             <img src="${getCardLargeUrl(sid, card)}" style="width:200px">
             <h4>${card.name}</h4>
             <div style="font-size:0.8rem; color:#9ecbff; margin-top:4px;">#${getCardNumberDisplay(card)}</div>
+            <div class="quantity-pill${currentQty === 0 ? ' zero' : ''}" style="margin:10px auto 0 auto; width:max-content;">Total Qty: ${currentQty}</div>
             <div style="margin-top:6px; font-size:0.8rem; color:#9ecbff;">Version: ${data.selectedVersionLabel || 'N/A'} ${selectedBucket ? `(score ${selectedBucket.score})` : ''}</div>
             <div style="margin-top:8px; font-size:0.85rem; color:#ccc;" id="modalCardIdDisplay"></div>
         `;
@@ -3045,7 +3350,8 @@
 
         function isCardVisible(sid, c) {
             const d = state[getCardStateKey(sid, c)] || {};
-            const failsToggleFilters = (f.hideOwned && d.owned) || (f.hidePending && d.pending) || (f.hideUnl && d.unl) || (f.hide1st && d['1st']) || (f.hideSdls && d.sdls);
+            const qty = getEffectiveCardQty(getCardStateKey(sid, c));
+            const failsToggleFilters = (f.hideOwned && qty > 0) || (f.hidePending && d.pending && qty === 0) || (f.hideUnl && d.unl) || (f.hide1st && d['1st']) || (f.hideSdls && d.sdls);
             if (failsToggleFilters) return false;
             if (!searchTerm) return true;
             const searchable = `${String(c.name || '')} ${String(c.variantLabel || '')}`.toLowerCase();
@@ -3057,11 +3363,12 @@
         trackerContainer.innerHTML = '';
         for (const [sid, set] of Object.entries(sets)) {
             const totalCards = set.cards.length;
-            const ownedCount = set.cards.filter(c => state[getCardStateKey(sid, c)]?.owned).length;
-            const pendingCount = set.cards.filter(c => state[getCardStateKey(sid, c)]?.pending).length;
+            const ownedCount = set.cards.filter(c => getEffectiveCardQty(getCardStateKey(sid, c)) > 0).length;
+            const pendingCount = set.cards.filter(c => state[getCardStateKey(sid, c)]?.pending && getEffectiveCardQty(getCardStateKey(sid, c)) === 0).length;
             const completionCount = set.cards.filter(c => {
-                const d = state[getCardStateKey(sid, c)] || {};
-                return !!d.owned || !!d.pending;
+                const key = getCardStateKey(sid, c);
+                const d = state[key] || {};
+                return getEffectiveCardQty(key) > 0 || !!d.pending;
             }).length;
             const ownedPercent = totalCards > 0 ? Math.round((ownedCount / totalCards) * 100) : 0;
             const pendingPercent = totalCards > 0 ? Math.round((pendingCount / totalCards) * 100) : 0;
@@ -3193,7 +3500,8 @@
                 visibleCards.forEach(c => {
                     const key = getCardStateKey(sid, c);
                     const d = state[key] || {};
-                    html += `<tr><td>${set.name}</td><td>${getCardNumberDisplay(c)}</td><td><img class="thumb" src="${getCardThumbUrl(sid, c)}"></td><td>${c.name}</td><td>${d.pending ? 'âœ…' : ''}</td><td>${d.owned ? 'âœ…' : ''}</td></tr>`;
+                    const qty = getEffectiveCardQty(key);
+                    html += `<tr><td>${set.name}</td><td>${getCardNumberDisplay(c)}</td><td><img class="thumb" src="${getCardThumbUrl(sid, c)}"></td><td>${c.name}</td><td>${d.pending && qty === 0 ? 'âœ…' : ''}</td><td>${qty > 0 ? qty : ''}</td></tr>`;
                 });
             }
             app.innerHTML = html + `</table>`;
@@ -3211,7 +3519,8 @@
                     visibleCards.forEach(c => {
                         const key = getCardStateKey(sid, c), d = state[key] || {};
                         const slot = document.createElement('div');
-                        slot.className = `card-slot ${d.owned ? 'owned' : ''} ${d.pending ? 'pending' : ''}`;
+                        const qty = getEffectiveCardQty(key);
+                        slot.className = `card-slot ${qty > 0 ? 'owned' : ''} ${d.pending && qty === 0 ? 'pending' : ''}`;
                         const variants = set.vars.map(v => {
                             let priceText = '';
                             if (d.versionBuckets) {
@@ -3227,7 +3536,10 @@
                             return { code: v, label: v.toUpperCase(), priceText: priceText };
                         });
                         const variantsHtml = variants.map(v => `<tr><td><input type="checkbox" ${d[v.code] ? 'checked' : ''} onchange="update('${key}', '${v.code}', this.checked)"> ${v.label}</td><td class="price-display">${v.priceText}</td><td class="price-col"><input type="number" class="price-input" value="${d[v.code+'Price'] || 0}" onchange="update('${key}', '${v.code+'Price'}', this.value)"></td></tr>`).join('');
-                        slot.innerHTML = `<img class="thumb" src="${getCardThumbUrl(sid, c)}"><div style="font-size:0.7rem">${getCardNumberDisplay(c)}</div><div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="update('${key}', 'pending', this.checked)"> Pending</div><table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
+                        const topLine = qty > 0
+                            ? `<div class="quantity-pill">Qty: ${qty}</div>`
+                            : `<div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="handleOwnedCheckboxToggle('${key}', this.checked, this)"> Owned</div>`;
+                        slot.innerHTML = `<img class="thumb" src="${getCardThumbUrl(sid, c)}"><div style="font-size:0.7rem">${getCardNumberDisplay(c)}</div>${topLine}<table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
                         pageWrapper.querySelector('.binder-page').appendChild(slot);
                     });
                     app.appendChild(pageWrapper);
@@ -3242,7 +3554,8 @@
                         visibleSlice.forEach(c => {
                             const key = getCardStateKey(sid, c), d = state[key] || {};
                             const slot = document.createElement('div');
-                            slot.className = `card-slot ${d.owned ? 'owned' : ''} ${d.pending ? 'pending' : ''}`;
+                            const qty = getEffectiveCardQty(key);
+                            slot.className = `card-slot ${qty > 0 ? 'owned' : ''} ${d.pending && qty === 0 ? 'pending' : ''}`;
                             const variants = set.vars.map(v => {
                                 let priceText = '';
                                 if (d.versionBuckets) {
@@ -3258,7 +3571,10 @@
                                 return { code: v, label: v.toUpperCase(), priceText: priceText };
                             });
                             const variantsHtml = variants.map(v => `<tr><td><input type="checkbox" ${d[v.code] ? 'checked' : ''} onchange="update('${key}', '${v.code}', this.checked)"> ${v.label}</td><td class="price-display">${v.priceText}</td><td class="price-col"><input type="number" class="price-input" value="${d[v.code+'Price'] || 0}" onchange="update('${key}', '${v.code+'Price'}', this.value)"></td></tr>`).join('');
-                            slot.innerHTML = `<img class="thumb" src="${getCardThumbUrl(sid, c)}"><div style="font-size:0.7rem">${getCardNumberDisplay(c)}</div><div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="update('${key}', 'pending', this.checked)"> Pending</div><table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
+                            const topLine = qty > 0
+                                ? `<div class="quantity-pill">Qty: ${qty}</div>`
+                                : `<div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="handleOwnedCheckboxToggle('${key}', this.checked, this)"> Owned</div>`;
+                            slot.innerHTML = `<img class="thumb" src="${getCardThumbUrl(sid, c)}"><div style="font-size:0.7rem">${getCardNumberDisplay(c)}</div>${topLine}<table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
                             pageWrapper.querySelector('.binder-page').appendChild(slot);
                         });
                         app.appendChild(pageWrapper);
@@ -3271,7 +3587,7 @@
     function update(key, variant, val) {
         if(!state[key]) state[key] = {};
         state[key][variant] = val;
-        state[key].owned = ['unl', '1st', 'sdls', 'err', 'fp'].some(k => state[key][k] === true);
+        syncCardOwnershipFlags(key);
         localStorage.setItem('master_tracker', JSON.stringify(state));
         render();
     }
@@ -3288,6 +3604,7 @@
     }
 
     function exportData() {
+        hydrateTrackerState();
         const payload = {
             state,
             justTcgMapping: getSavedJustTcgMap(),
@@ -3318,6 +3635,7 @@
                 } else {
                     state = parsed;
                 }
+                hydrateTrackerState();
                 localStorage.setItem('master_tracker', JSON.stringify(state));
                 render();
                 alert('Import complete. Tracker state restored.');
@@ -3328,6 +3646,7 @@
         reader.readAsText(input.files[0]);
     }
     
+    hydrateTrackerState();
     loadSavedApiKey();
     loadSavedJustTcgMap();
     applyCollapsedSectionState();

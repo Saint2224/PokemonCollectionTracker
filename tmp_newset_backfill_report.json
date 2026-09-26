@@ -1,0 +1,24 @@
+{
+  "chaosrising": {
+    "attempted": 122,
+    "mapped_before": 116,
+    "newly_found": 5,
+    "mapped_after_estimate": 121,
+    "missing_after_estimate": 1,
+    "mapped_after_actual": 121,
+    "total_keys": 122,
+    "missing_after_actual": 1
+  },
+  "pitchblack": {
+    "attempted": 120,
+    "mapped_before": 94,
+    "newly_found": 26,
+    "mapped_after_estimate": 120,
+    "missing_after_estimate": 0,
+    "mapped_after_actual": 120,
+    "total_keys": 120,
+    "missing_after_actual": 0
+  },
+  "updates_written": 31,
+  "replaced": 31
+}

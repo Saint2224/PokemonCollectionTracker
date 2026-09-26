@@ -1,14 +1,324 @@
 {
   "chaosrising": {
-    "links_collected": 50,
-    "mapped": 28,
-    "min_num": 87,
-    "max_num": 122
+    "total": 122,
+    "mapped": 0,
+    "verifiedByDetail": 0,
+    "missing": 122,
+    "changed": 26,
+    "missingSample": [
+      "chaosrising-1",
+      "chaosrising-2",
+      "chaosrising-3",
+      "chaosrising-4",
+      "chaosrising-5",
+      "chaosrising-6",
+      "chaosrising-7",
+      "chaosrising-8",
+      "chaosrising-9",
+      "chaosrising-10",
+      "chaosrising-11",
+      "chaosrising-12",
+      "chaosrising-13",
+      "chaosrising-14",
+      "chaosrising-15",
+      "chaosrising-16",
+      "chaosrising-17",
+      "chaosrising-18",
+      "chaosrising-19",
+      "chaosrising-20",
+      "chaosrising-21",
+      "chaosrising-22",
+      "chaosrising-23",
+      "chaosrising-24",
+      "chaosrising-25"
+    ],
+    "changedSample": [
+      {
+        "key": "chaosrising-87",
+        "existing": "pokemon-me04-chaos-rising-chespin-087-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-88",
+        "existing": "pokemon-me04-chaos-rising-froakie-088-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-89",
+        "existing": "pokemon-me04-chaos-rising-frogadier-089-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-90",
+        "existing": "pokemon-me04-chaos-rising-ampharos-090-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-91",
+        "existing": "pokemon-me04-chaos-rising-xerneas-091-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-92",
+        "existing": "pokemon-me04-chaos-rising-claydol-092-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-93",
+        "existing": "pokemon-me04-chaos-rising-crobat-093-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-94",
+        "existing": "pokemon-me04-chaos-rising-metang-094-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-95",
+        "existing": "pokemon-me04-chaos-rising-sliggoo-095-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-96",
+        "existing": "pokemon-me04-chaos-rising-tauros-096-086-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-98",
+        "existing": "pokemon-me04-chaos-rising-beedrill-ex-098-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-99",
+        "existing": "pokemon-me04-chaos-rising-mega-pyroar-ex-099-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-100",
+        "existing": "pokemon-me04-chaos-rising-mega-greninja-ex-100-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-101",
+        "existing": "pokemon-me04-chaos-rising-mega-floette-ex-101-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-103",
+        "existing": "pokemon-me04-chaos-rising-cobalion-ex-103-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-104",
+        "existing": "pokemon-me04-chaos-rising-mega-dragalge-ex-104-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-105",
+        "existing": "pokemon-me04-chaos-rising-cinccino-ex-105-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-112",
+        "existing": "pokemon-me04-chaos-rising-roxie-s-performance-112-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-113",
+        "existing": "pokemon-me04-chaos-rising-special-red-card-113-086-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-116",
+        "existing": "pokemon-me04-chaos-rising-mega-greninja-ex-116-086-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-117",
+        "existing": "pokemon-me04-chaos-rising-mega-floette-ex-117-086-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-118",
+        "existing": "pokemon-me04-chaos-rising-mega-dragalge-ex-118-086-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-119",
+        "existing": "pokemon-me04-chaos-rising-cinccino-ex-119-086-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-120",
+        "existing": "pokemon-me04-chaos-rising-az-s-tranquility-120-086-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "chaosrising-121",
+        "existing": "pokemon-me04-chaos-rising-roxie-s-performance-121-086-special-illustration-rare",
+        "scraped": null
+      }
+    ]
   },
   "pitchblack": {
-    "links_collected": 50,
-    "mapped": 27,
-    "min_num": 85,
-    "max_num": 120
+    "total": 120,
+    "mapped": 0,
+    "verifiedByDetail": 0,
+    "missing": 120,
+    "changed": 25,
+    "missingSample": [
+      "pitchblack-1",
+      "pitchblack-2",
+      "pitchblack-3",
+      "pitchblack-4",
+      "pitchblack-5",
+      "pitchblack-6",
+      "pitchblack-7",
+      "pitchblack-8",
+      "pitchblack-9",
+      "pitchblack-10",
+      "pitchblack-11",
+      "pitchblack-12",
+      "pitchblack-13",
+      "pitchblack-14",
+      "pitchblack-15",
+      "pitchblack-16",
+      "pitchblack-17",
+      "pitchblack-18",
+      "pitchblack-19",
+      "pitchblack-20",
+      "pitchblack-21",
+      "pitchblack-22",
+      "pitchblack-23",
+      "pitchblack-24",
+      "pitchblack-25"
+    ],
+    "changedSample": [
+      {
+        "key": "pitchblack-85",
+        "existing": "pokemon-me05-pitch-black-fomantis-085-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-86",
+        "existing": "pokemon-me05-pitch-black-armarouge-086-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-87",
+        "existing": "pokemon-me05-pitch-black-goldeen-087-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-88",
+        "existing": "pokemon-me05-pitch-black-primarina-088-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-89",
+        "existing": "pokemon-me05-pitch-black-manectric-089-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-90",
+        "existing": "pokemon-me05-pitch-black-slowbro-090-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-91",
+        "existing": "pokemon-me05-pitch-black-dhelmise-091-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-94",
+        "existing": "pokemon-me05-pitch-black-toucannon-094-084-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-97",
+        "existing": "pokemon-me05-pitch-black-wailord-ex-097-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-98",
+        "existing": "pokemon-me05-pitch-black-mega-zeraora-ex-098-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-99",
+        "existing": "pokemon-me05-pitch-black-mega-chandelure-ex-099084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-101",
+        "existing": "pokemon-me05-pitch-black-mega-darkrai-ex-101-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-102",
+        "existing": "pokemon-me05-pitch-black-morpeko-ex-102-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-103",
+        "existing": "pokemon-me05-pitch-black-mega-excadrill-ex-103-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-106",
+        "existing": "pokemon-me05-pitch-black-dark-bell-106084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-108",
+        "existing": "pokemon-me05-pitch-black-gladion-s-final-battle-108-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-109",
+        "existing": "pokemon-me05-pitch-black-gwynn-109-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-111",
+        "existing": "pokemon-me05-pitch-black-misty-s-vitality-111-084-ultra-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-114",
+        "existing": "pokemon-me05-pitch-black-mega-zeraora-ex-114-084-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-115",
+        "existing": "pokemon-me05-pitch-black-mega-chandelure-ex-115084-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-116",
+        "existing": "pokemon-me05-pitch-black-mega-darkrai-ex-116084-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-117",
+        "existing": "pokemon-me05-pitch-black-morpeko-ex-117-084-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-118",
+        "existing": "pokemon-me05-pitch-black-gladion-s-final-battle-118084-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-119",
+        "existing": "pokemon-me05-pitch-black-gwynn-119084-special-illustration-rare",
+        "scraped": null
+      },
+      {
+        "key": "pitchblack-120",
+        "existing": "pokemon-me05-pitch-black-mega-darkrai-ex-120084-mega-hyper-rare",
+        "scraped": null
+      }
+    ]
   }
 }

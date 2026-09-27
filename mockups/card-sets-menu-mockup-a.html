@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Card Sets Menu Mockup A - Drawer</title>
+  <style>
+    :root {
+      --bg: #141414;
+      --panel: #1f1f1f;
+      --panel-2: #252525;
+      --line: #3a3a3a;
+      --text: #f2f2f2;
+      --muted: #b9b9b9;
+      --accent: #4fa3ff;
+      --ok: #2ecc71;
+      --warn: #f1c40f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at 0% 0%, #212121 0%, #111 52%, #0c0c0c 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app-frame {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      height: 52px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #161616;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      position: sticky;
+      top: 12px;
+      z-index: 5;
+    }
+
+    .burger {
+      height: 34px;
+      min-width: 38px;
+      border-radius: 8px;
+      border: 1px solid #505050;
+      background: #232323;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .canvas {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+    }
+
+    .drawer {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #202020 0%, #181818 100%);
+      padding: 12px;
+      height: min(760px, calc(100vh - 120px));
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .drawer-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .drawer-title h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid #4d4d4d;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      color: #d6d6d6;
+      background: #262626;
+    }
+
+    .chip.active {
+      border-color: #6dafff;
+      color: #dcebff;
+      background: #1d3045;
+    }
+
+    .search {
+      width: 100%;
+      background: #2a2a2a;
+      border: 1px solid #4e4e4e;
+      border-radius: 9px;
+      color: #fff;
+      padding: 10px;
+      outline: none;
+    }
+
+    .set-list {
+      margin-top: 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+      padding-right: 4px;
+      flex: 1;
+      overscroll-behavior: contain;
+    }
+
+    .set-item {
+      border: 1px solid #3f3f3f;
+      border-radius: 11px;
+      background: var(--panel-2);
+      padding: 9px;
+      display: grid;
+      grid-template-columns: 6px 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .set-color {
+      width: 6px;
+      align-self: stretch;
+      border-radius: 999px;
+    }
+
+    .set-meta {
+      min-width: 0;
+    }
+
+    .set-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .set-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .set-progress {
+      margin-top: 7px;
+    }
+
+    .set-progress-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #3b3b3b;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .set-progress-owned {
+      height: 100%;
+      background: var(--ok);
+    }
+
+    .set-progress-pending {
+      height: 100%;
+      background: var(--warn);
+    }
+
+    .set-progress-label {
+      margin-top: 3px;
+      font-size: 0.7rem;
+      color: #b7b7b7;
+    }
+
+    .variant-progress-list {
+      margin-top: 7px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .variant-progress-row {
+      display: grid;
+      grid-template-columns: 38px 1fr 56px;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.68rem;
+      color: #bac5d8;
+    }
+
+    .variant-label {
+      letter-spacing: 0.03em;
+      font-weight: 700;
+      color: #d2def5;
+    }
+
+    .variant-value {
+      text-align: right;
+      color: #9eb2d0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .set-side {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .pct {
+      font-size: 0.78rem;
+      color: #dbe8ff;
+      border: 1px solid #4a617d;
+      background: #1e2d3f;
+      border-radius: 999px;
+      padding: 2px 8px;
+    }
+
+    .toggle {
+      font-size: 0.75rem;
+      color: #d2d2d2;
+      border: 1px solid #555;
+      background: #2d2d2d;
+      border-radius: 8px;
+      padding: 4px 8px;
+    }
+
+    .toggle.hidden {
+      color: #ffd8d8;
+      border-color: #7a4b4b;
+      background: #3a2323;
+    }
+
+    .drawer-footer {
+      border-top: 1px solid #3f3f3f;
+      padding-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #181818;
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+    }
+
+    .btn {
+      border: 1px solid #555;
+      background: #2d2d2d;
+      color: #fff;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      border-color: #4f84be;
+      background: #20416a;
+    }
+
+    .preview {
+      border: 1px dashed #3f3f3f;
+      border-radius: 14px;
+      padding: 14px;
+      min-height: 680px;
+      color: #bfbfbf;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .preview h3 {
+      margin-top: 0;
+      color: #eee;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 980px) {
+      .canvas {
+        grid-template-columns: 1fr;
+      }
+      .drawer {
+        height: calc(100vh - 96px);
+      }
+      .preview {
+        min-height: 260px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-frame">
+    <div class="topbar">
+      <button class="burger">☰</button>
+      <strong>Quick Controls</strong>
+      <span style="color:#9bb0ca;font-size:0.8rem;">Mockup A</span>
+    </div>
+
+    <div class="canvas">
+      <aside class="drawer">
+        <div class="drawer-title">
+          <h2>Card Sets</h2>
+          <span style="font-size:0.75rem;color:#9bb0ca;">12 active</span>
+        </div>
+
+        <input class="search" placeholder="Search sets, era, tags..." />
+
+        <div class="chip-row">
+          <div class="chip active">All</div>
+          <div class="chip">Favorites</div>
+          <div class="chip">Vintage</div>
+          <div class="chip">Modern</div>
+          <div class="chip">Custom</div>
+        </div>
+
+        <div class="chip-row">
+          <div class="chip active">Visible</div>
+          <div class="chip">Hidden</div>
+          <div class="chip">Needs Attention</div>
+        </div>
+
+        <div class="set-list">
+          <div class="set-item">
+            <div class="set-color" style="background:#ff3e3e"></div>
+            <div class="set-meta">
+              <div class="set-name">Base Set</div>
+              <div class="set-sub"><span>102 cards</span><span>Owned 72</span><span style="color:var(--warn)">Pending 12</span></div>
+              <div class="set-progress">
+                <div class="set-progress-track">
+                  <div class="set-progress-owned" style="width:70.6%"></div>
+                  <div class="set-progress-pending" style="width:11.8%"></div>
+                </div>
+                <div class="set-progress-label">All variants: Owned 70.6% · Pending 11.8%</div>
+              </div>
+              <div class="variant-progress-list">
+                <div class="variant-progress-row">
+                  <span class="variant-label">UNL</span>
+                  <div class="set-progress-track"><div class="set-progress-owned" style="width:88%"></div><div class="set-progress-pending" style="width:8%"></div></div>
+                  <span class="variant-value">88 / 8</span>
+                </div>
+                <div class="variant-progress-row">
+                  <span class="variant-label">1ST</span>
+                  <div class="set-progress-track"><div class="set-progress-owned" style="width:42%"></div><div class="set-progress-pending" style="width:11%"></div></div>
+                  <span class="variant-value">42 / 11</span>
+                </div>
+                <div class="variant-progress-row">
+                  <span class="variant-label">SDLS</span>
+                  <div class="set-progress-track"><div class="set-progress-owned" style="width:36%"></div><div class="set-progress-pending" style="width:6%"></div></div>
+                  <span class="variant-value">36 / 6</span>
+                </div>
+                <div class="variant-progress-row">
+                  <span class="variant-label">ERR</span>
+                  <div class="set-progress-track"><div class="set-progress-owned" style="width:14%"></div><div class="set-progress-pending" style="width:2%"></div></div>
+                  <span class="variant-value">14 / 2</span>
+                </div>
+              </div>
+            </div>
+            <div class="set-side">
+              <div class="pct">70.6%</div>
+              <button class="toggle">Visible</button>
+            </div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#2ecc71"></div>
+            <div class="set-meta">
+              <div class="set-name">Jungle</div>
+              <div class="set-sub"><span>64 cards</span><span>Owned 28</span><span style="color:var(--warn)">Pending 6</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:43.8%"></div><div class="set-progress-pending" style="width:9.4%"></div></div><div class="set-progress-label">Owned 43.8% · Pending 9.4%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">43.8%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#e67e22"></div>
+            <div class="set-meta">
+              <div class="set-name">Fossil</div>
+              <div class="set-sub"><span>62 cards</span><span>Owned 24</span><span style="color:var(--warn)">Pending 9</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:38.7%"></div><div class="set-progress-pending" style="width:14.5%"></div></div><div class="set-progress-label">Owned 38.7% · Pending 14.5%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">38.7%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#c0392b"></div>
+            <div class="set-meta">
+              <div class="set-name">Rocket</div>
+              <div class="set-sub"><span>83 cards</span><span>Owned 17</span><span style="color:var(--warn)">Pending 5</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:20.5%"></div><div class="set-progress-pending" style="width:6.0%"></div></div><div class="set-progress-label">Owned 20.5% · Pending 6.0%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">20.5%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#f1c40f"></div>
+            <div class="set-meta">
+              <div class="set-name">Base Set 2</div>
+              <div class="set-sub"><span>130 cards</span><span>Owned 10</span><span style="color:var(--warn)">Pending 2</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:7.7%"></div><div class="set-progress-pending" style="width:1.5%"></div></div><div class="set-progress-label">Owned 7.7% · Pending 1.5%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">7.7%</div><button class="toggle hidden">Hidden</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#3498db"></div>
+            <div class="set-meta">
+              <div class="set-name">Gym Heroes</div>
+              <div class="set-sub"><span>132 cards</span><span>Owned 24</span><span style="color:var(--warn)">Pending 6</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:18.1%"></div><div class="set-progress-pending" style="width:4.5%"></div></div><div class="set-progress-label">Owned 18.1% · Pending 4.5%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">18.1%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#9b59b6"></div>
+            <div class="set-meta">
+              <div class="set-name">Gym Challenge</div>
+              <div class="set-sub"><span>132 cards</span><span>Owned 22</span><span style="color:var(--warn)">Pending 7</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:16.7%"></div><div class="set-progress-pending" style="width:5.3%"></div></div><div class="set-progress-label">Owned 16.7% · Pending 5.3%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">16.7%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#16a085"></div>
+            <div class="set-meta">
+              <div class="set-name">Chaos Rising</div>
+              <div class="set-sub"><span>120 cards</span><span>Owned 9</span><span style="color:var(--warn)">Pending 4</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:7.5%"></div><div class="set-progress-pending" style="width:3.3%"></div></div><div class="set-progress-label">Owned 7.5% · Pending 3.3%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">7.5%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#34495e"></div>
+            <div class="set-meta">
+              <div class="set-name">Pitch Black</div>
+              <div class="set-sub"><span>120 cards</span><span>Owned 3</span><span style="color:var(--warn)">Pending 2</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:2.5%"></div><div class="set-progress-pending" style="width:1.7%"></div></div><div class="set-progress-label">Owned 2.5% · Pending 1.7%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">2.5%</div><button class="toggle hidden">Hidden</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#8e44ad"></div>
+            <div class="set-meta">
+              <div class="set-name">30th Anniversary (Classic Collection)</div>
+              <div class="set-sub"><span>30 cards</span><span>Owned 5</span><span style="color:var(--warn)">Pending 2</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:16.7%"></div><div class="set-progress-pending" style="width:6.7%"></div></div><div class="set-progress-label">Owned 16.7% · Pending 6.7%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">16.7%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#c2185b"></div>
+            <div class="set-meta">
+              <div class="set-name">30th Celebration</div>
+              <div class="set-sub"><span>159 cards</span><span>Owned 0</span><span style="color:var(--warn)">Pending 3</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:0%"></div><div class="set-progress-pending" style="width:1.9%"></div></div><div class="set-progress-label">Owned 0.0% · Pending 1.9%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">0.0%</div><button class="toggle">Visible</button></div>
+          </div>
+
+          <div class="set-item">
+            <div class="set-color" style="background:#e74c3c"></div>
+            <div class="set-meta">
+              <div class="set-name">Destined Rivals</div>
+              <div class="set-sub"><span>244 cards</span><span>Owned 0</span><span style="color:var(--warn)">Pending 0</span></div>
+              <div class="set-progress"><div class="set-progress-track"><div class="set-progress-owned" style="width:0%"></div><div class="set-progress-pending" style="width:0%"></div></div><div class="set-progress-label">Owned 0.0% · Pending 0.0%</div></div>
+            </div>
+            <div class="set-side"><div class="pct">0.0%</div><button class="toggle">Visible</button></div>
+          </div>
+        </div>
+
+        <div class="drawer-footer">
+          <button class="btn">Show All</button>
+          <button class="btn">Hide Completed</button>
+          <button class="btn">Save Preset</button>
+          <button class="btn primary">Apply</button>
+        </div>
+      </aside>
+
+      <section class="preview">
+        <h3>Why this layout</h3>
+        <p>Prioritizes scan speed and one-thumb interaction. Search and chips stay near top; high-frequency actions are always visible at the bottom.</p>
+        <p>Each set row gives context without opening another panel: name, counts, completion, and visibility toggle all in one line.</p>
+        <p>On mobile this drawer can become full-width and still keep filters plus toggles accessible without excessive scrolling.</p>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

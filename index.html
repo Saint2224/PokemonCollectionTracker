@@ -610,6 +610,7 @@
         font-weight: 700;
         margin-top: 6px;
     }
+    .quantity-pill-open-inventory { cursor: pointer; }
     .quantity-pill.zero { background: #3b2d17; color: #ffe6aa; }
     .quantity-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; }
     .quantity-row button { min-width: 34px; }
@@ -4876,7 +4877,7 @@
                         });
                         const variantsHtml = variants.map(v => `<tr><td><input type="checkbox" ${d[v.code] ? 'checked' : ''} onchange="update('${key}', '${v.code}', this.checked)"> ${v.label}</td><td class="price-display">${v.priceText}</td><td class="price-col"><input type="number" class="price-input" value="${d[v.code+'Price'] || 0}" onchange="update('${key}', '${v.code+'Price'}', this.value)"></td></tr>`).join('');
                         const topLine = qty > 0
-                            ? `<div class="quantity-pill">Qty: ${qty}</div>`
+                            ? `<div class="quantity-pill quantity-pill-open-inventory" onclick="openInventoryModal('${key}')" title="Adjust quantity">Qty: ${qty}</div>`
                             : `<div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="togglePending('${key}', this.checked)"> Pending</div>`;
                         slot.innerHTML = `<img class="thumb" src="${getCardThumbUrl(sid, c)}"><div style="font-size:0.7rem">${getCardNumberDisplay(c)}</div>${topLine}<table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
                         pageWrapper.querySelector('.binder-page').appendChild(slot);
@@ -4911,7 +4912,7 @@
                             });
                             const variantsHtml = variants.map(v => `<tr><td><input type="checkbox" ${d[v.code] ? 'checked' : ''} onchange="update('${key}', '${v.code}', this.checked)"> ${v.label}</td><td class="price-display">${v.priceText}</td><td class="price-col"><input type="number" class="price-input" value="${d[v.code+'Price'] || 0}" onchange="update('${key}', '${v.code+'Price'}', this.value)"></td></tr>`).join('');
                             const topLine = qty > 0
-                                ? `<div class="quantity-pill">Qty: ${qty}</div>`
+                                ? `<div class="quantity-pill quantity-pill-open-inventory" onclick="openInventoryModal('${key}')" title="Adjust quantity">Qty: ${qty}</div>`
                                 : `<div><input type="checkbox" ${d.pending ? 'checked' : ''} onchange="togglePending('${key}', this.checked)"> Pending</div>`;
                             slot.innerHTML = `<img class="thumb" src="${getCardThumbUrl(sid, c)}"><div style="font-size:0.7rem">${getCardNumberDisplay(c)}</div>${topLine}<table>${variantsHtml}</table><button onclick="showVariantsModal('${key}')">More Options</button>`;
                             pageWrapper.querySelector('.binder-page').appendChild(slot);

@@ -478,27 +478,45 @@
     body.table-mode #binderTable { margin-top: 20px; }
 
     @media (max-width: 980px) {
-        .top-sticky-bar { top: 0; }
+        .top-sticky-bar {
+            top: 0;
+            flex-wrap: nowrap;
+            align-items: center;
+        }
         .top-sticky-main {
-            width: 100%;
-            flex-wrap: wrap;
+            width: auto;
+            flex: 1 1 auto;
+            flex-wrap: nowrap;
         }
         .top-sticky-title {
-            flex: 1 1 100%;
+            display: none;
         }
         .top-sticky-search {
-            flex: 1 1 100%;
+            flex: 1 1 auto;
+            min-width: 0;
+            gap: 6px;
+        }
+        .top-sticky-search button {
+            min-width: 52px;
+            padding: 8px 8px;
+        }
+        .top-sticky-bar > button:not(.hamburger-btn) {
+            flex: 0 0 auto;
+            padding: 8px 8px;
+            font-size: 0.82rem;
         }
         .controls-dropdown-menu {
             top: 60px;
             left: 10px;
             width: min(280px, calc(100vw - 20px));
+            z-index: 1900;
         }
         #headerControlsDrawerShell {
-            top: 64px;
+            top: var(--controls-drawer-top, 64px);
             left: 10px;
             right: 10px;
             max-height: calc(100vh - 78px);
+            z-index: 1850;
         }
         .header-container { flex-direction: column; align-items: stretch; gap: 20px; }
         .header-col { max-width: 100%; }
@@ -2390,6 +2408,27 @@
         document.body.classList.remove('controls-focus-cardSets', 'controls-focus-cardType', 'controls-focus-apiKey');
     }
 
+    function updateControlsDrawerPosition() {
+        if (!window.matchMedia('(max-width: 980px)').matches) {
+            document.documentElement.style.removeProperty('--controls-drawer-top');
+            return;
+        }
+
+        const menu = document.getElementById('controlsDropdownMenu');
+        const topBar = document.getElementById('topStickyBar');
+        const defaultTop = topBar ? Math.round(topBar.getBoundingClientRect().bottom + 8) : 64;
+        let drawerTop = defaultTop;
+
+        if (menu && document.body.classList.contains('controls-menu-open')) {
+            const menuRect = menu.getBoundingClientRect();
+            if (menuRect.height > 0) {
+                drawerTop = Math.round(menuRect.bottom + 8);
+            }
+        }
+
+        document.documentElement.style.setProperty('--controls-drawer-top', `${drawerTop}px`);
+    }
+
     function clearNameSearch(event = null) {
         if (event) {
             event.stopPropagation();
@@ -2414,6 +2453,7 @@
             closeControlsSubmenus();
         }
         document.body.classList.toggle('controls-menu-open');
+        updateControlsDrawerPosition();
     }
 
     function toggleControlsSubmenu(groupKey, event = null) {
@@ -2428,6 +2468,7 @@
         const willOpen = !group.classList.contains('open');
         closeControlsSubmenus();
         if (willOpen) group.classList.add('open');
+        updateControlsDrawerPosition();
     }
 
     function runImportExportAction(action, event = null) {
@@ -2524,6 +2565,7 @@
 
         localStorage.setItem('master_tracker', JSON.stringify(state));
         applyCollapsedSectionState();
+        updateControlsDrawerPosition();
     }
 
     function closeControlsDrawer(keepMenuOpen = false) {
@@ -2532,9 +2574,12 @@
             closeControlsSubmenus();
         }
         document.body.classList.remove('controls-drawer-open');
+        document.documentElement.style.removeProperty('--controls-drawer-top');
         setControlsMenuActiveTarget(null);
         clearControlsFocusClasses();
     }
+
+    window.addEventListener('resize', updateControlsDrawerPosition);
 
     function setAllSetsVisibility(showAll, evt = null) {
         if (evt) {

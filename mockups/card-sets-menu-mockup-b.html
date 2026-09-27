@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Card Sets Menu Mockup B - Bottom Sheet</title>
+  <style>
+    :root {
+      --bg: #101114;
+      --text: #f1f3f8;
+      --muted: #aeb7ca;
+      --line: #2f3340;
+      --sheet: #1a1d26;
+      --chip: #242a36;
+      --chip-on: #2a4466;
+      --brand: #65a4ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 90% -10%, #1c2638 0%, #0f1116 45%, #0a0c10 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .frame {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #12151d;
+      padding: 9px 11px;
+      position: sticky;
+      top: 10px;
+      z-index: 2;
+    }
+
+    .menu-btn {
+      border: 1px solid #4d5b78;
+      background: #1d2533;
+      color: #fff;
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .mock-grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .sheet {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #1d2230 0%, #171b25 100%);
+      overflow: hidden;
+      min-height: 700px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sheet-handle {
+      width: 70px;
+      height: 6px;
+      border-radius: 999px;
+      background: #5b647a;
+      opacity: 0.65;
+      margin: 10px auto 2px;
+    }
+
+    .sheet-head {
+      padding: 8px 14px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sheet-head h2 {
+      margin: 2px 0 0;
+      font-size: 1.03rem;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tab {
+      text-align: center;
+      border: 1px solid #405070;
+      border-radius: 10px;
+      padding: 7px;
+      font-size: 0.82rem;
+      color: #dce8ff;
+      background: #202d42;
+      font-weight: 700;
+    }
+
+    .tab.off {
+      border-color: #404655;
+      color: #a9afbe;
+      background: #232834;
+      font-weight: 500;
+    }
+
+    .search-wrap {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .search-wrap input {
+      flex: 1;
+      background: #131826;
+      border: 1px solid #445170;
+      border-radius: 9px;
+      padding: 9px 10px;
+      color: #fff;
+      outline: none;
+    }
+
+    .chips {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .chip {
+      border: 1px solid #445170;
+      border-radius: 999px;
+      background: var(--chip);
+      color: #d4deef;
+      padding: 4px 9px;
+      font-size: 0.74rem;
+    }
+
+    .chip.on {
+      border-color: #5ea0ff;
+      background: var(--chip-on);
+      color: #e5f1ff;
+    }
+
+    .sheet-body {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .tile {
+      border: 1px solid #40475a;
+      border-radius: 12px;
+      background: #202633;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 120px;
+    }
+
+    .tile-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .tile-name {
+      font-size: 0.87rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .tile-sub {
+      color: var(--muted);
+      font-size: 0.74rem;
+      line-height: 1.35;
+    }
+
+    .tile-actions {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .mini {
+      font-size: 0.72rem;
+      border: 1px solid #536282;
+      border-radius: 999px;
+      padding: 2px 7px;
+      color: #e2ecff;
+      background: #283b59;
+    }
+
+    .switch {
+      border: 1px solid #56607a;
+      background: #252c3c;
+      color: #e8efff;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      padding: 4px 8px;
+    }
+
+    .sheet-foot {
+      border-top: 1px solid var(--line);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      background: #171b25;
+    }
+
+    .action {
+      border: 1px solid #48516a;
+      background: #262c3b;
+      color: #fff;
+      border-radius: 10px;
+      padding: 9px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .action.primary {
+      border-color: #5fa2ff;
+      background: #21416a;
+    }
+
+    .notes {
+      border: 1px dashed #3a4256;
+      border-radius: 14px;
+      padding: 14px;
+      color: #c5d0e3;
+      background: rgba(255,255,255,0.02);
+      min-height: 700px;
+    }
+
+    .notes h3 {
+      margin-top: 0;
+      color: #edf2ff;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 980px) {
+      .mock-grid {
+        grid-template-columns: 1fr;
+      }
+      .sheet {
+        min-height: 78vh;
+      }
+      .sheet-body {
+        grid-template-columns: 1fr;
+      }
+      .notes {
+        min-height: 260px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="topbar">
+      <button class="menu-btn">☰</button>
+      <strong>Quick Controls</strong>
+      <span style="font-size:0.8rem;color:#aeb7ca;">Mockup B</span>
+    </div>
+
+    <div class="mock-grid">
+      <section class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <h2>Card Sets</h2>
+          <div class="tabs">
+            <div class="tab">Browse</div>
+            <div class="tab off">Saved Views</div>
+            <div class="tab off">Set Health</div>
+          </div>
+
+          <div class="search-wrap">
+            <input placeholder="Find set..." />
+            <button class="menu-btn">Sort</button>
+          </div>
+
+          <div class="chips">
+            <div class="chip on">All</div>
+            <div class="chip">Vintage</div>
+            <div class="chip">Modern</div>
+            <div class="chip">Custom</div>
+            <div class="chip">Visible</div>
+            <div class="chip">Hidden</div>
+          </div>
+        </div>
+
+        <div class="sheet-body">
+          <article class="tile">
+            <div class="tile-head">
+              <div class="tile-name">Base Set</div>
+              <div class="dot" style="background:#ff3e3e"></div>
+            </div>
+            <div class="tile-sub">102 cards · Owned 72 · Pending 12</div>
+            <div class="tile-actions">
+              <span class="mini">70.6%</span>
+              <button class="switch">Visible</button>
+            </div>
+          </article>
+
+          <article class="tile">
+            <div class="tile-head">
+              <div class="tile-name">Gym Heroes</div>
+              <div class="dot" style="background:#3498db"></div>
+            </div>
+            <div class="tile-sub">132 cards · Owned 24 · Pending 6</div>
+            <div class="tile-actions">
+              <span class="mini">18.1%</span>
+              <button class="switch">Visible</button>
+            </div>
+          </article>
+
+          <article class="tile">
+            <div class="tile-head">
+              <div class="tile-name">30th Celebration</div>
+              <div class="dot" style="background:#c2185b"></div>
+            </div>
+            <div class="tile-sub">159 cards · Owned 0 · Pending 3</div>
+            <div class="tile-actions">
+              <span class="mini">0.0%</span>
+              <button class="switch">Visible</button>
+            </div>
+          </article>
+
+          <article class="tile">
+            <div class="tile-head">
+              <div class="tile-name">Destined Rivals</div>
+              <div class="dot" style="background:#e74c3c"></div>
+            </div>
+            <div class="tile-sub">244 cards · Owned 0 · Pending 0</div>
+            <div class="tile-actions">
+              <span class="mini">0.0%</span>
+              <button class="switch">Visible</button>
+            </div>
+          </article>
+
+          <article class="tile">
+            <div class="tile-head">
+              <div class="tile-name">Pitch Black</div>
+              <div class="dot" style="background:#34495e"></div>
+            </div>
+            <div class="tile-sub">120 cards · Owned 3 · Pending 2</div>
+            <div class="tile-actions">
+              <span class="mini">2.5%</span>
+              <button class="switch">Hidden</button>
+            </div>
+          </article>
+
+          <article class="tile">
+            <div class="tile-head">
+              <div class="tile-name">Chaos Rising</div>
+              <div class="dot" style="background:#16a085"></div>
+            </div>
+            <div class="tile-sub">120 cards · Owned 9 · Pending 4</div>
+            <div class="tile-actions">
+              <span class="mini">7.5%</span>
+              <button class="switch">Visible</button>
+            </div>
+          </article>
+        </div>
+
+        <div class="sheet-foot">
+          <div class="action">Show All</div>
+          <div class="action">Hide Completed</div>
+          <div class="action primary">Apply</div>
+        </div>
+      </section>
+
+      <aside class="notes">
+        <h3>Why this layout</h3>
+        <p>This one is mobile-first: a bottom-sheet style panel with tabs and a dense tile grid that still works on desktop.</p>
+        <p>It supports progressive complexity:</p>
+        <p>Browse tab for everyday use, Saved Views for user-defined presets, Set Health for maintenance and troubleshooting.</p>
+        <p>The footer keeps high-frequency actions in a thumb-friendly location. On small screens it behaves like an app panel rather than a long form.</p>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>

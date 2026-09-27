@@ -2054,6 +2054,10 @@
         },
         pitchblack: {
             eligibleNumbers: [1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 46, 47, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84]
+        },
+        destinedrivals: {
+            // Base numbers that have mirrored special-number entries in this set.
+            eligibleNumbers: [2, 8, 10, 12, 18, 20, 30, 34, 38, 42, 45, 50, 54, 75, 77, 89, 126, 127, 146, 148, 149, 151, 159]
         }
     };
 
@@ -2079,6 +2083,7 @@
 
     const chaosRisingExpandedCards = expandNumberSharedVariants(chaosRisingCards, 'chaosrising');
     const pitchBlackExpandedCards = expandNumberSharedVariants(pitchBlackCards, 'pitchblack');
+    const destinedRivalsExpandedCards = expandNumberSharedVariants(destinedRivalsCards, 'destinedrivals');
 
     const sets = {
         base: { name: "Base", justtcgSetNames: ['Base Set', 'Base Set Unlimited'], color: "var(--base-c)", src: "base1", vars: ['unl', '1st', 'sdls', 'err'], cards: typeof baseCards !== 'undefined' ? baseCards : [] },
@@ -2092,7 +2097,7 @@
         pitchblack: { name: "Pitch Black", justtcgSetNames: ['Pitch Black'], color: "var(--pitchblack-c)", src: "me5", vars: ['unl'], cards: typeof pitchBlackExpandedCards !== 'undefined' ? pitchBlackExpandedCards : [] },
         thirtyanniversary: { name: "30th Anniversary", justtcgSetNames: ['ME: 30th Celebration Classic Collection', 'ME: 30th Celebration'], color: "var(--thirtyanniversary-c)", src: "me30", vars: ['unl'], cards: typeof thirtyAnniversaryCards !== 'undefined' ? thirtyAnniversaryCards : [] },
         thirtycelebration: { name: "30th Celebration", justtcgSetNames: ['ME: 30th Celebration'], color: "var(--thirtycelebration-c)", src: "me30main", vars: ['unl'], cards: typeof thirtyAnniversaryMainCards !== 'undefined' ? thirtyAnniversaryMainCards : [] },
-        destinedrivals: { name: "Destined Rivals", justtcgSetNames: ['SV10: Destined Rivals'], color: "var(--destinedrivals-c)", src: "sv10", vars: ['unl'], cards: typeof destinedRivalsCards !== 'undefined' ? destinedRivalsCards : [] }
+        destinedrivals: { name: "Destined Rivals", justtcgSetNames: ['SV10: Destined Rivals'], color: "var(--destinedrivals-c)", src: "sv10", vars: ['unl'], cards: typeof destinedRivalsExpandedCards !== 'undefined' ? destinedRivalsExpandedCards : [] }
     };
     
     let state = JSON.parse(localStorage.getItem('master_tracker')) || { settings: { scale: 1.2 } };
@@ -3690,6 +3695,18 @@
         return `justtcg_viewer.html?cardId=${encodeURIComponent(cardId)}`;
     }
 
+    function getParallelSourceCard(sid, card) {
+        if (!card || card.variantCode !== 'parallel') return null;
+        const cards = sets[sid]?.cards || [];
+        const currentToken = getCardNumToken(card);
+        const index = cards.findIndex(c => getCardNumToken(c) === currentToken);
+        if (index <= 0) return null;
+        for (let i = index - 1; i >= 0; i--) {
+            if (cards[i]?.variantCode !== 'parallel') return cards[i];
+        }
+        return null;
+    }
+
     function resolveCardImageToken(sid, cardOrNum) {
         const set = sets[sid];
         if (!set) return '';
@@ -3700,10 +3717,10 @@
 
         if (card?.imageToken) return card.imageToken;
 
-        if ((sid === 'chaosrising' || sid === 'pitchblack') && card?.variantCode === 'parallel') {
+        if ((sid === 'chaosrising' || sid === 'pitchblack' || sid === 'destinedrivals') && card?.variantCode === 'parallel') {
             const baseKey = `${sid}-${card.num}`;
             const mappedSlug = EMBEDDED_JUSTTCG_MAPPING && EMBEDDED_JUSTTCG_MAPPING[baseKey];
-            if (mappedSlug) return `${mappedSlug}-parallel-set`;
+            if (mappedSlug) return mappedSlug;
         }
 
         return `${set.src}-${numberText}`;
@@ -3732,6 +3749,9 @@
     function getCardThumbUrl(sid, cardOrNum) {
         const set = sets[sid];
         if (!set) return '';
+        const card = (typeof cardOrNum === 'object' && cardOrNum !== null) ? cardOrNum : null;
+        const parallelSourceCard = getParallelSourceCard(sid, card);
+        if (parallelSourceCard) return getCardThumbUrl(sid, parallelSourceCard);
         if (sid === 'thirtyanniversary' || sid === 'thirtycelebration') {
             const tcgplayerUrl = resolveThirtyTcgplayerImageUrl(sid, cardOrNum, 'thumb');
             if (tcgplayerUrl) return tcgplayerUrl;
@@ -3753,6 +3773,9 @@
     function getCardLargeUrl(sid, cardOrNum) {
         const set = sets[sid];
         if (!set) return '';
+        const card = (typeof cardOrNum === 'object' && cardOrNum !== null) ? cardOrNum : null;
+        const parallelSourceCard = getParallelSourceCard(sid, card);
+        if (parallelSourceCard) return getCardLargeUrl(sid, parallelSourceCard);
         if (sid === 'thirtyanniversary' || sid === 'thirtycelebration') {
             const tcgplayerUrl = resolveThirtyTcgplayerImageUrl(sid, cardOrNum, 'large');
             if (tcgplayerUrl) return tcgplayerUrl;

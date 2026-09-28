@@ -2056,8 +2056,15 @@
             eligibleNumbers: [1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 46, 47, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84]
         },
         destinedrivals: {
-            // Base numbers that have mirrored special-number entries in this set.
-            eligibleNumbers: [2, 8, 10, 12, 18, 20, 30, 34, 38, 42, 45, 50, 54, 75, 77, 89, 126, 127, 146, 148, 149, 151, 159]
+            // Destined Rivals parallels align with cards that have reverse holofoil pricing
+            // in the PokemonTCG API: base cards (1-182) excluding Double Rare entries.
+            eligibleNumbers: destinedRivalsCards
+                .filter(card => {
+                    const cardNum = Number(card?.num);
+                    if (!Number.isFinite(cardNum) || cardNum < 1 || cardNum > 182) return false;
+                    return !/double-rare/i.test(String(card?.imageToken || ''));
+                })
+                .map(card => Number(card.num))
         }
     };
 
